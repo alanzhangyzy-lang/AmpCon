@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AIDC Dashboard 软件需求规格说明书（SR）</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; padding: 24px; background: #fff; color: #1f2329; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #3370ff; }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; }
+  p, li { font-size: 14px; line-height: 1.8; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 13px; }
+  th { background: #f0f2f5; font-weight: 600; text-align: center; padding: 8px 10px; border: 1px solid #dee0e3; white-space: nowrap; }
+  td { padding: 6px 10px; border: 1px solid #dee0e3; vertical-align: middle; }
+  .strong-cell { font-weight: 600; background: #fafbfc; white-space: nowrap; }
+  ul { padding-left: 20px; }
+  pre { background: #f7f8fa; padding: 12px 16px; border-radius: 6px; font-size: 12px; overflow-x: auto; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<h1>AIDC Dashboard 软件需求规格说明书（SR）</h1>
+<table>
+<tr><td class="strong-cell">文档编号</td><td>SR-AMPCON-AIDC-DASH-001</td></tr>
+<tr><td class="strong-cell">版本</td><td>v1.0</td></tr>
+<tr><td class="strong-cell">作者</td><td>AmpCon Product Team</td></tr>
+<tr><td class="strong-cell">日期</td><td>2026-04-27</td></tr>
+</table>
+
+<h2>1. 依赖与前置条件</h2>
+
+<h3>1.1 系统依赖</h3>
+<table>
+<tr><th>依赖项</th><th>最低版本</th><th>说明</th></tr>
+<tr><td>AmpCon OS 底座</td><td>v2.0.0-LTS</td><td>Dashboard 运行的基础平台</td></tr>
+<tr><td>AIDC Network App</td><td>v2.2.0+</td><td>Dashboard 为该 App 的 Overview 模块</td></tr>
+<tr><td>数据采集服务</td><td>v1.0.0+</td><td>设备指标、ECN 报文、告警数据的采集与聚合</td></tr>
+<tr><td>告警中心</td><td>v1.0.0+</td><td>告警汇总与事件流数据源</td></tr>
+</table>
+
+<h3>1.2 业务前置条件</h3>
+<table>
+<tr><th>条件</th><th>说明</th></tr>
+<tr><td>站点已创建并绑定 AIDC Network App</td><td>Dashboard 数据来源于站点下的设备和链路</td></tr>
+<tr><td>至少有一台设备在线</td><td>否则面板数据为空或显示默认值</td></tr>
+<tr><td>数据采集服务正常运行</td><td>ECN、Buffer、拥塞等指标依赖实时采集</td></tr>
+</table>
+
+<h2>2. 功能需求</h2>
+
+<h3>2.1 AIDC Dashboard</h3>
+
+<h4>2.1.1 功能说明</h4>
+<p>AIDC Dashboard 是 AIDC Network App 的 Overview 功能模块，为数据中心 AI 网络场景提供统一的运维监控视图。Dashboard 采用 3×3 九宫格布局，涵盖以下 10 个功能单元：</p>
+<table>
+<tr><th>序号</th><th>功能单元</th><th>面板位置</th><th>优先级</th><th>说明</th></tr>
+<tr><td>1</td><td>Dashboard 工具栏</td><td>顶部</td><td>P0</td><td>视图切换、面板管理、全屏、导入导出，所有 App Dashboard 共享</td></tr>
+<tr><td>2</td><td>网络健康度评估</td><td>R1-C1</td><td>P0</td><td>站点健康度评分环形图，含站点名称、场景类型、运行状态</td></tr>
+<tr><td>3</td><td>队列丢包 Top5</td><td>R1-C2</td><td>P0</td><td>按 ECN 报文数降序排列的 Top5 设备端口</td></tr>
+<tr><td>4</td><td>Headroom Buffer 利用率趋势图</td><td>R1-C3</td><td>P1</td><td>面积折线图，含阈值参考线</td></tr>
+<tr><td>5</td><td>设备资源统计</td><td>R2-C1</td><td>P0</td><td>设备在线/离线/异常统计 + 设备类型分布条形图</td></tr>
+<tr><td>6</td><td>ECN 报文数 Top5</td><td>R2-C2</td><td>P0</td><td>交换机/网卡双 Tab 切换，Top5 排名表</td></tr>
+<tr><td>7</td><td>网络拥塞趋势图</td><td>R2-C3</td><td>P1</td><td>多线折线图，展示拥塞指标趋势</td></tr>
+<tr><td>8</td><td>资产负载排名 Top5</td><td>R3-C1</td><td>P1</td><td>CPU/内存/温度三 Tab 切换，Top5 排名表</td></tr>
+<tr><td>9</td><td>告警汇总</td><td>R3-C2</td><td>P0</td><td>2×2 网格卡片，四级告警统计</td></tr>
+<tr><td>10</td><td>Events 事件流</td><td>R3-C3</td><td>P0</td><td>告警事件列表，支持按严重程度筛选</td></tr>
+</table>
+
+<p><strong>面板布局矩阵：</strong></p>
+<table>
+<tr><th>行</th><th>列 1</th><th>列 2</th><th>列 3</th></tr>
+<tr><td class="strong-cell">Row 1</td><td>网络健康度评估</td><td>队列丢包 Top5</td><td>Headroom Buffer 趋势图</td></tr>
+<tr><td class="strong-cell">Row 2</td><td>设备资源统计</td><td>ECN 报文数 Top5</td><td>网络拥塞趋势图</td></tr>
+<tr><td class="strong-cell">Row 3</td><td>资产负载排名 Top5</td><td>告警汇总</td><td>Events</td></tr>
+</table>
+
+<h4>2.1.2 原型界面</h4>
+
+<p><strong>① Dashboard 工具栏</strong></p>
+<pre>┌──────────────────────────────────────────────────────────────┐
+│ Views: [Default ▼]                    [+📄] [⊞] [⛶] [⋯]   │
+└──────────────────────────────────────────────────────────────┘</pre>
+<ul>
+<li>Views 下拉框：Default / AmpCon Cluster / Device Health</li>
+<li>⋯ 更多菜单：设置为默认 / 复制 / 删除 / 导出JSON / 导出JPEG / 导入</li>
+</ul>
+
+<p><strong>② 网络健康度评估（R1-C1）</strong>：站点名称 + 场景类型 + 运行状态文字 + 健康度环形图（0-100）</p>
+<p><strong>③ 队列丢包 Top5（R1-C2）</strong>：排名/设备名/端口/ECN报文数 表格，5 行</p>
+<p><strong>④ Headroom Buffer 趋势图（R1-C3）</strong>：面积折线图，绿色趋势线 + 橙色虚线阈值线（75%），Y 轴 0%-100%</p>
+<p><strong>⑤ 设备资源统计（R2-C1）</strong>：环形图（在线蓝/离线红）+ 统计数字 + 设备类型水平条形图</p>
+<p><strong>⑥ ECN 报文数 Top5（R2-C2）</strong>：[交换机][网卡] Tab 切换，表格 5 行</p>
+<p><strong>⑦ 网络拥塞趋势图（R2-C3）</strong>：蓝/绿/橙三条指标线折线图，X 轴 00:00-24:00</p>
+<p><strong>⑧ 资产负载排名 Top5（R3-C1）</strong>：[CPU][内存][温度] Tab 切换，排名/设备名/IP/利用率进度条</p>
+<p><strong>⑨ 告警汇总（R3-C2）</strong>：2×2 网格，严重(红)/重要(橙)/一般(黄)/提示(蓝) 四张卡片</p>
+<p><strong>⑩ Events（R3-C3）</strong>：[All ▼] 筛选下拉 + 事件列表（圆点+时间+站点+描述）</p>
+
+<h4>2.1.3 交互说明</h4>
+<table>
+<tr><th>序号</th><th>功能单元</th><th>交互</th><th>说明</th></tr>
+<tr><td>1</td><td>工具栏 - Views</td><td>点击展开</td><td>切换 Dashboard 视图</td></tr>
+<tr><td>1</td><td>工具栏 - 📄/⊞/⛶</td><td>点击</td><td>新建视图/添加面板/全屏</td></tr>
+<tr><td>1</td><td>工具栏 - ⋯ 更多</td><td>点击展开</td><td>设置为默认/复制/删除/导出/导入</td></tr>
+<tr><td>2</td><td>网络健康度评估</td><td>仅展示</td><td>环形图颜色随健康度变化</td></tr>
+<tr><td>3</td><td>队列丢包 Top5</td><td>仅展示</td><td>表格行 hover 高亮</td></tr>
+<tr><td>4</td><td>Headroom Buffer 趋势图</td><td>仅展示</td><td>面积折线图</td></tr>
+<tr><td>5</td><td>设备资源统计</td><td>仅展示</td><td>环形图 + 条形图</td></tr>
+<tr><td>6</td><td>ECN 报文数 Top5</td><td>Tab 切换</td><td>交换机/网卡，默认交换机</td></tr>
+<tr><td>7</td><td>网络拥塞趋势图</td><td>仅展示</td><td>多线折线图</td></tr>
+<tr><td>8</td><td>资产负载排名 Top5</td><td>Tab 切换</td><td>CPU/内存/温度，默认 CPU</td></tr>
+<tr><td>9</td><td>告警汇总</td><td>仅展示</td><td>2×2 网格卡片</td></tr>
+<tr><td>10</td><td>Events 事件流</td><td>下拉筛选</td><td>All/CRITICAL/MAJOR/MINOR/WARNING</td></tr>
+</table>
+<p>Tab 选中态：蓝色背景白色文字。排名 Top1 红色背景，Top2 橙色背景，3-5 灰色背景。</p>
+
+<h4>2.1.4 列表字段</h4>
+
+<p><strong>② 网络健康度评估</strong></p>
+<table>
+<tr><th>字段</th><th>类型</th><th>来源</th><th>说明</th></tr>
+<tr><td>站点名称</td><td>文本</td><td>Site.name</td><td>如 "Frankfurt Data Center"</td></tr>
+<tr><td>场景类型</td><td>文本</td><td>固定</td><td>"数据中心场景"</td></tr>
+<tr><td>运行状态</td><td>文本</td><td>计算</td><td>≥90 健康(#10b981) / 70-89 一般(#f59e0b) / &lt;70 异常(#ef4444)</td></tr>
+<tr><td>健康度评分</td><td>数值</td><td>Site.health</td><td>0-100，环形图展示</td></tr>
+</table>
+
+<p><strong>③ 队列丢包 Top5 / ⑥ ECN 报文数 Top5（交换机 Tab）</strong></p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td>排名/#</td><td>数值</td><td>1-5</td></tr>
+<tr><td>设备名</td><td>文本</td><td>设备名称</td></tr>
+<tr><td>端口</td><td>文本</td><td>端口标识，等宽字体</td></tr>
+<tr><td>ECN 报文数</td><td>数值</td><td>千分位格式化</td></tr>
+</table>
+
+<p><strong>⑥ ECN 报文数 Top5（网卡 Tab）</strong></p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td>#</td><td>数值</td><td>1-5</td></tr>
+<tr><td>设备名</td><td>文本</td><td>服务器名称</td></tr>
+<tr><td>网卡名称</td><td>文本</td><td>如 mlx5_0，等宽字体</td></tr>
+<tr><td>ECN 报文数</td><td>数值</td><td>千分位格式化</td></tr>
+</table>
+
+<p><strong>⑤ 设备资源统计</strong></p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td>设备总数</td><td>数值</td><td>Site.deviceCount</td></tr>
+<tr><td>设备在线数</td><td>数值</td><td>在线设备数量</td></tr>
+<tr><td>设备在线率</td><td>百分比</td><td>在线数/总数</td></tr>
+<tr><td>设备离线数</td><td>数值</td><td>离线设备数量</td></tr>
+<tr><td>异常设备数</td><td>数值</td><td>红色标识</td></tr>
+<tr><td>设备类型分布</td><td>条形图</td><td>Spine(靛蓝)/Leaf(绿)/Border Leaf(琥珀)/Other(灰)</td></tr>
+</table>
+
+<p><strong>⑧ 资产负载排名 Top5</strong></p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td>排名</td><td>数值</td><td>1-5</td></tr>
+<tr><td>设备名</td><td>文本</td><td>设备名称</td></tr>
+<tr><td>IP</td><td>文本</td><td>管理 IP，等宽字体</td></tr>
+<tr><td>当前利用率</td><td>百分比+进度条</td><td>≥80% 红色，≥60% 橙色，其余蓝色</td></tr>
+</table>
+
+<p><strong>⑨ 告警汇总</strong></p>
+<table>
+<tr><th>告警级别</th><th>背景色</th><th>数字颜色</th><th>对应级别</th></tr>
+<tr><td>严重告警</td><td>红色浅底</td><td>红色</td><td>Critical</td></tr>
+<tr><td>重要告警</td><td>橙色浅底</td><td>橙色</td><td>Major</td></tr>
+<tr><td>一般告警</td><td>黄色浅底</td><td>黄色</td><td>Minor</td></tr>
+<tr><td>提示告警</td><td>蓝色浅底</td><td>蓝色</td><td>Warning/Info</td></tr>
+</table>
+
+<p><strong>⑩ Events 事件流</strong></p>
+<table>
+<tr><th>字段</th><th>类型</th><th>说明</th></tr>
+<tr><td>严重程度指示</td><td>圆点</td><td>红=CRITICAL，橙=MAJOR，黄=MINOR</td></tr>
+<tr><td>时间</td><td>时间戳</td><td>等宽字体，YYYY-MM-DD HH:mm:ss</td></tr>
+<tr><td>站点</td><td>文本</td><td>事件来源站点</td></tr>
+<tr><td>事件描述</td><td>文本</td><td>告警消息内容</td></tr>
+</table>
+
+<h4>2.1.5 异常与容错处理</h4>
+<table>
+<tr><th>异常场景</th><th>处理方式</th></tr>
+<tr><td>数据采集服务不可用</td><td>面板显示"数据加载中"或上次缓存数据，不显示空白</td></tr>
+<tr><td>站点无设备</td><td>健康度显示 100，设备统计显示 0，Top5 表格显示"暂无数据"</td></tr>
+<tr><td>告警服务不可用</td><td>告警汇总显示 0，Events 显示"暂无事件"</td></tr>
+<tr><td>单个面板渲染失败</td><td>仅该面板显示错误提示，不影响其他面板</td></tr>
+<tr><td>数据刷新超时</td><td>保留上次数据，下次周期重试</td></tr>
+<tr><td>筛选无匹配</td><td>Events 显示"暂无匹配事件"</td></tr>
+</table>
+
+<h4>2.1.6 权限控制要求</h4>
+<table>
+<tr><th>操作</th><th>最低权限</th></tr>
+<tr><td>查看 Dashboard 所有面板</td><td>SiteAdmin / Viewer</td></tr>
+<tr><td>切换 Dashboard 视图</td><td>SiteAdmin / Viewer</td></tr>
+<tr><td>新建/删除 Dashboard 视图</td><td>SuperAdmin</td></tr>
+<tr><td>导出 JSON / JPEG</td><td>SiteAdmin</td></tr>
+<tr><td>导入 Dashboard 配置</td><td>SuperAdmin</td></tr>
+</table>
+
+<h4>2.1.7 功能约束与边界</h4>
+<table>
+<tr><th>约束</th><th>说明</th></tr>
+<tr><td>工具栏为共享组件</td><td>所有 App Dashboard（AIDC/IDC/Campus 等）使用同一工具栏，仅数据面板不同</td></tr>
+<tr><td>Dashboard 画布全宽</td><td>无 max-width 限制，自适应容器宽度</td></tr>
+<tr><td>3×3 等宽网格</td><td>每行 3 个面板，gap 16px，同行面板等高</td></tr>
+<tr><td>面板卡片样式</td><td>白色背景，1px 浅灰边框，8px 圆角，无阴影</td></tr>
+<tr><td>标题栏与内容分离</td><td>标题 12px font-semibold，底部分隔线</td></tr>
+<tr><td>背景色</td><td>#f0f2f5</td></tr>
+<tr><td>Top5 固定 5 条</td><td>不足时显示实际数量</td></tr>
+<tr><td>Tab 切换默认值</td><td>ECN 默认"交换机"，资产负载默认"CPU"，Events 默认"All"</td></tr>
+<tr><td>数据刷新周期</td><td>30 秒自动轮询</td></tr>
+<tr><td>首屏加载</td><td>≤ 2 秒（9 面板全部渲染）</td></tr>
+<tr><td>浏览器兼容</td><td>Chrome 90+ / Edge 90+ / Firefox 90+</td></tr>
+<tr><td>最小宽度</td><td>1200px，低于此水平滚动</td></tr>
+</table>
+
+<h2>3. 变更记录</h2>
+<table>
+<tr><th>版本</th><th>日期</th><th>变更内容</th><th>作者</th></tr>
+<tr><td>v1.0</td><td>2026-04-27</td><td>初始版本</td><td>AmpCon Product Team</td></tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,2376 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>融合控制器拓扑视图 软件需求规格说明书（SR）</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+    line-height: 1.7;
+    color: #1a1a1a;
+    background: #fff;
+    padding: 40px 20px;
+  }
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+  h1 { font-size: 28px; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e5e5e5; }
+  h2 { font-size: 22px; margin: 28px 0 14px; padding-bottom: 6px; border-bottom: 1px solid #e5e5e5; }
+  h3 { font-size: 18px; margin: 24px 0 12px; }
+  h4 { font-size: 16px; margin: 20px 0 10px; }
+  p { margin: 8px 0; }
+  hr { border: none; border-top: 1px solid #e5e5e5; margin: 24px 0; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0 20px;
+    font-size: 14px;
+  }
+  thead th {
+    background: #f5f5f5;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    border: 1px solid #d0d0d0;
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 8px 12px;
+    border: 1px solid #d0d0d0;
+    vertical-align: top;
+    word-break: break-word;
+  }
+  tbody tr:nth-child(even) { background: #fafafa; }
+  pre {
+    background: #f5f5f5;
+    padding: 12px;
+    border-radius: 4px;
+    overflow-x: auto;
+    margin: 12px 0;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  pre code {
+    background: none;
+    padding: 0;
+    font-size: 13px;
+  }
+  code {
+    background: #f0f0f0;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 13px;
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  ul { margin: 8px 0 8px 24px; }
+  li { margin: 4px 0; }
+  blockquote {
+    border-left: 4px solid #ddd;
+    padding: 8px 16px;
+    margin: 12px 0;
+    color: #555;
+    background: #fafafa;
+  }
+  strong { font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>融合控制器拓扑视图 软件需求规格说明书（SR）</h1>
+
+<table>
+<thead><tr><th>项目</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>文档编号</td><td>SR-AMPCON-TOPOLOGY-001</td></tr>
+<tr><td>版本</td><td>v1.0</td></tr>
+<tr><td>作者</td><td>AmpCon Product Team</td></tr>
+<tr><td>日期</td><td>2026-04-23</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>1. 依赖与前置条件</h2>
+
+<h3>1.1 SR表单拆解</h3>
+
+<table>
+<thead><tr><th>SR</th><th>SR描述</th><th>功能说明</th><th>功能优先级</th><th>本版SR</th></tr></thead>
+<tbody>
+<tr><td>TOPO-001</td><td>全局拓扑视图</td><td>提供 Network View（2D SVG）和 Globe View（3D 地球）两种全局拓扑展示模式，展示所有 Site 卡片（2×2 网格布局）及 Site 间链路（按质量着色：optimal=绿色, congested=橙色, degraded=红色，带延迟标签）</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-002</td><td>Site 卡片展开/折叠</td><td>双击 Site 卡片展开查看站内设备拓扑（设备按角色层级布局：Core/Spine → Aggregation/Leaf → Access → AP/Camera），再次双击折叠</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-003</td><td>站内设备详情</td><td>点击展开后的设备节点，左侧抽屉展示设备基本信息（名称、型号、软件版本、MAC、序列号、在线状态、运行时长、管理IP），两个 Tab：设备邻居（含 "View Connectivity" 链接）和告警列表</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-004</td><td>站内链路详情</td><td>点击展开后的设备间链路，左侧抽屉展示 "Connectivity between DeviceA ↕ DeviceB"，链路指标（吞吐量、带宽利用率、丢弃率、错误率、延迟），两个 Tab：成员链路和告警列表</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-005</td><td>Site 邻居关系视图</td><td>单击未展开的 Site 卡片，左侧抽屉展示 "Site or Selected Link"（副标题 "Current Site: SiteName"），两个 Tab：Neighbors（邻居站点名称、类型、链路数、状态点）和 Members（该站点所有跨站链路的设备对）</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-006</td><td>Site 间链路关系视图</td><td>点击 Site 间连线，左侧抽屉展示 "Site or Selected Link"（副标题 "SiteA ⟷ SiteB"），两个 Tab：Neighbors 和 Members（该条连线上的设备对），连线高亮（加粗 + 发光）</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-007</td><td>跨站设备级链路</td><td>两个 Site 都展开后，设备级跨站链路以曲线显示（带带宽标签），点击曲线打开 LinkDetailView（复用 TOPO-004 链路详情）</td><td>P1</td><td>✅</td></tr>
+<tr><td>TOPO-008</td><td>全局概览面板 (Global Overview)</td><td>左侧抽屉默认视图：Header "Overview"，全局健康度（3 个图标：DC/Campus/Optical 各自评分），关键指标（站点总数、站点类型分布进度条、设备总数），两个 Tab：站点列表（可搜索）和告警列表</td><td>P0</td><td>✅</td></tr>
+<tr><td>TOPO-009</td><td>画布交互工具栏</td><td>左上角工具栏：交互工具、展开/折叠全部、自适应视图、放大、缩小、刷新、绘制模式、导出 SVG</td><td>P1</td><td>✅</td></tr>
+</tbody>
+</table>
+
+<h3>1.2 系统依赖</h3>
+
+<table>
+<thead><tr><th>依赖项</th><th>最低版本</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>React</td><td>^19.2.3</td><td>UI 框架</td></tr>
+<tr><td>TypeScript</td><td>~5.8.2</td><td>类型检查</td></tr>
+<tr><td>Vite</td><td>^6.2.0</td><td>开发服务器 + 构建工具</td></tr>
+<tr><td>Lucide React</td><td>^0.562.0</td><td>图标组件库</td></tr>
+<tr><td>Tailwind CSS</td><td>CDN</td><td>原子化 CSS</td></tr>
+</tbody>
+</table>
+
+<h3>1.3 网络依赖</h3>
+
+<table>
+<thead><tr><th>场景</th><th>依赖</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>数据加载</td><td>后端 REST API</td><td>提供 Site、Device、Link、Alarm 数据（当前版本使用 Mock 数据）</td></tr>
+<tr><td>告警数据</td><td>告警采集模块</td><td>当前版本使用 Mock 数据 <code>MOCK_ALARMS</code></td></tr>
+<tr><td>站点邻居链路</td><td>网络发现模块</td><td>提供跨站设备互联关系（当前版本使用 <code>SITE_NEIGHBOR_LINKS</code> Mock 数据）</td></tr>
+</tbody>
+</table>
+
+<h3>1.4 权限依赖</h3>
+
+<table>
+<thead><tr><th>操作</th><th>最低权限</th></tr></thead>
+<tbody>
+<tr><td>查看全局拓扑</td><td>Viewer</td></tr>
+<tr><td>展开 Site 卡片</td><td>SiteAdmin</td></tr>
+<tr><td>查看设备/链路详情</td><td>Viewer</td></tr>
+<tr><td>拖拽 Site 卡片</td><td>SiteAdmin</td></tr>
+<tr><td>导出 SVG</td><td>SiteAdmin</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制，所有用户可查看完整拓扑并执行所有操作。后续版本按上表实现。</blockquote>
+
+<h3>1.5 业务前置条件</h3>
+
+<table>
+<thead><tr><th>条件</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>拓扑数据依赖后端 REST API</td><td>提供 Site、Device、Link 数据（当前版本使用 Mock 数据，定义在 <code>constants.tsx</code>）</td></tr>
+<tr><td>告警数据依赖告警采集模块</td><td>当前版本使用 Mock 数据 <code>MOCK_ALARMS</code></td></tr>
+<tr><td>站点邻居链路数据依赖网络发现模块</td><td>提供跨站设备互联关系（当前版本使用 <code>SITE_NEIGHBOR_LINKS</code> Mock 数据）</td></tr>
+<tr><td>前端技术栈</td><td>React 19 + TypeScript 5.8 + Vite 6 + Tailwind CSS + Lucide React Icons</td></tr>
+<tr><td>画布渲染</td><td>SVG 原生渲染（后续可迁移至 AntV G6）</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>2. 功能需求</h2>
+
+<h3>2.1 全局拓扑视图 (TOPO-001)</h3>
+
+<h4>2.1.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 提供统一的网络拓扑可视化界面，支持 Network View（2D SVG 拓扑图）和 Globe View（3D 地球视图）两种展示模式。Network View 以 SVG 画布展示所有 Site 卡片及 Site 间链路关系，Globe View 以 3D 地球展示站点地理分布。</p>
+
+<p><strong>触发条件：</strong> 用户进入拓扑页面（点击侧边栏 "Topology" 菜单），默认加载 Network View。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>加载所有 Site 数据（<code>MOCK_SITES</code>：名称、类型、位置、健康度、设备数、告警数）</li>
+<li>加载 Site 间链路数据（<code>FABRIC_LINKS</code>：延迟、负载、质量状态）</li>
+<li>根据 Site 数量自动计算 2×2 网格布局（<code>gridCols=2</code>，间距 <code>spacingX=600, spacingY=500</code>）</li>
+<li>渲染 Site 卡片（<code>CollapsedSiteContent</code>）和 Site 间连线（带延迟标签）</li>
+<li>连线颜色编码：<code>optimal</code>（绿色 <code>#22c55e</code>）、<code>congested</code>（橙色 <code>#f97316</code>）、<code>degraded</code>（红色 <code>#ef4444</code>）</li>
+<li>左侧默认展示 Global Overview 面板</li>
+</ul>
+
+<p><strong>输出结果：</strong> 画布展示所有 Site 卡片和 Site 间链路，左侧展示 Global Overview 面板。</p>
+
+<h4>2.1.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Arista CloudVision、Cisco DNA Center 拓扑设计理念：</p>
+<ul>
+<li>层次化下钻：全局 → Site → Device → Link 逐级深入</li>
+<li>左侧抽屉面板随选中对象动态切换内容</li>
+<li>Site 间关系通过画布连线 + 抽屉面板双重展示</li>
+<li>双视图模式（2D 拓扑 + 3D 地球）满足不同场景需求</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户进入拓扑页面
+  ↓
+系统加载 Site 列表 + Site 间链路数据
+  ↓
+渲染全局拓扑画布（默认 Network View）
+  ↓
+用户可执行以下操作：
+  - 单击 Site 卡片 → 左侧显示 Site 邻居关系（TOPO-005）
+  - 双击 Site 卡片 → 展开站内设备拓扑（TOPO-002）
+  - 点击 Site 间连线 → 左侧显示链路成员（TOPO-006）
+  - 点击展开后的设备节点 → 左侧显示设备详情（TOPO-003）
+  - 点击展开后的设备链路 → 左侧显示链路详情（TOPO-004）
+  - 切换 Globe View → 3D 地球展示站点地理分布</code></pre>
+
+<p><strong>（三）用户交互流程</strong></p>
+
+<table>
+<thead><tr><th>用户操作</th><th>画布反馈</th><th>左侧抽屉内容</th></tr></thead>
+<tbody>
+<tr><td>无选中（默认）</td><td>默认状态</td><td>Global Overview（健康度、指标、站点列表、告警）</td></tr>
+<tr><td>单击未展开 Site 卡片</td><td>卡片高亮（蓝色边框）</td><td>Site or Selected Link → Neighbors tab</td></tr>
+<tr><td>双击 Site 卡片</td><td>卡片展开显示站内设备</td><td>保持当前抽屉内容</td></tr>
+<tr><td>点击 Site 间连线</td><td>连线高亮加粗 + 发光</td><td>Site or Selected Link → Members tab</td></tr>
+<tr><td>点击展开后的设备节点</td><td>设备节点高亮</td><td>设备详情（设备邻居、告警列表）</td></tr>
+<tr><td>点击展开后的设备链路</td><td>链路高亮</td><td>链路详情（成员链路、告警列表）</td></tr>
+<tr><td>点击跨站设备链路（两站都展开）</td><td>曲线高亮</td><td>链路详情（复用 TOPO-004）</td></tr>
+<tr><td>点击画布空白区域</td><td>清除所有选中</td><td>返回 Global Overview</td></tr>
+</tbody>
+</table>
+
+<h4>2.1.3 功能业务流程</h4>
+
+<pre><code>全局拓扑加载流程：
+  系统启动 → 获取 Site 列表（MOCK_SITES）
+    → 获取 Site 间链路（FABRIC_LINKS）
+    → 计算 2×2 网格布局
+    → 渲染 SVG 画布（Site 卡片 + 连线）
+    → 左侧展示 Global Overview
+
+视图切换流程：
+  用户点击 Globe View 按钮
+    → 切换为 3D 地球视图
+    → 站点以地理坐标标注在地球上
+    → 站点间连线以弧线展示
+  用户点击 Network View 按钮
+    → 切换回 2D SVG 拓扑视图</code></pre>
+
+<h4>2.1.4 原型界面</h4>
+
+<p><strong>A区（画布区域）：</strong></p>
+<ul>
+<li>SVG 画布，支持缩放（20%~500%）和平移</li>
+<li>Site 卡片折叠态：160×140px，显示站点名称、类型图标、健康度、设备数/在线数/告警数</li>
+<li>Site 卡片展开态：480×380px，显示站内设备拓扑（设备节点 + 站内链路）</li>
+<li>Site 间连线：带延迟标签的彩色连线（颜色编码：绿/橙/红）</li>
+<li>跨站设备链路：两站都展开后显示的曲线（带带宽标签）</li>
+</ul>
+
+<p><strong>B区（左侧抽屉面板，宽度 200px）：</strong></p>
+<ul>
+<li>可折叠/展开（ChevronLeft/ChevronRight 按钮）</li>
+<li>根据选中对象动态切换内容（见交互流程表）</li>
+</ul>
+
+<p><strong>C区（画布工具栏，左上角）：</strong></p>
+<ul>
+<li>交互工具、展开/折叠全部、自适应、放大、缩小、刷新、绘制模式、导出 SVG</li>
+</ul>
+
+<p><strong>D区（图例，右下角）：</strong></p>
+<ul>
+<li>Optimal / Congested / Online / Provisioning / Offline 状态图例</li>
+</ul>
+
+<p><strong>E区（视图切换，右上角）：</strong></p>
+<ul>
+<li>Network View / Globe View 切换按钮</li>
+</ul>
+
+<h4>2.1.5 交互说明</h4>
+
+<p><strong>画布交互：</strong></p>
+<ul>
+<li>当用户滚动鼠标滚轮时，系统应以鼠标位置为基准缩放视图（范围 20%~500%，步长 10%）</li>
+<li>当用户拖拽画布空白区域时，系统应平移画布（更新 <code>panOffset</code> 状态）</li>
+<li>当用户拖拽 Site 卡片时，系统应移动该卡片位置（仅在交互模式 <code>interactMode=true</code> 下生效）</li>
+<li>当用户双击 Site 卡片时，系统应展开/折叠该站点的设备拓扑（切换 <code>expandedSites</code> 状态）</li>
+<li>当用户单击未展开的 Site 卡片时，系统应在左侧抽屉显示该站点的邻居关系视图</li>
+<li>当用户点击 Site 间连线时，系统应高亮该连线（加粗 + 发光效果）并在左侧抽屉显示链路成员视图</li>
+<li>当用户点击画布空白区域时，系统应清除所有选中状态，左侧抽屉返回 Global Overview</li>
+</ul>
+
+<p><strong>抽屉面板交互：</strong></p>
+<ul>
+<li>当用户点击抽屉中的 ← 返回按钮时，系统应关闭当前详情视图，返回 Global Overview</li>
+<li>当用户在设备详情中点击 "View Connectivity" 时，系统应切换到链路详情视图</li>
+<li>当用户在链路详情中点击设备名称时，系统应切换到该设备的详情视图</li>
+</ul>
+
+<p><strong>视图切换交互：</strong></p>
+<ul>
+<li>当用户点击 Globe View 按钮时，系统应切换为 3D 地球视图，保留当前选中状态</li>
+<li>当用户点击 Network View 按钮时，系统应切换回 2D 拓扑视图</li>
+</ul>
+
+<h4>2.1.6 列表字段</h4>
+
+<p><strong>Site 卡片（折叠态）字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th><th>显示/隐藏</th><th>对齐方式</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>name</td><td>Site.name</td><td>站点名称</td><td>显示</td><td>居中</td></tr>
+<tr><td>2</td><td>siteType</td><td>Site.siteType</td><td>站点类型（Data Center / Campus / Optical）</td><td>显示</td><td>居中</td></tr>
+<tr><td>3</td><td>health</td><td>Site.health</td><td>健康度百分比（如 98%）</td><td>显示</td><td>居中</td></tr>
+<tr><td>4</td><td>deviceCount</td><td>Site.deviceCount</td><td>设备总数</td><td>显示</td><td>居中</td></tr>
+<tr><td>5</td><td>onlineCount</td><td>计算字段</td><td>在线设备数（status='online' 的设备数）</td><td>显示</td><td>居中</td></tr>
+<tr><td>6</td><td>alertCount</td><td>Site.alertCount</td><td>告警数</td><td>显示</td><td>居中</td></tr>
+</tbody>
+</table>
+
+<p><strong>Site 间连线标签字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>latency</td><td>FabricLink.latency</td><td>延迟值（如 "24ms"）</td></tr>
+</tbody>
+</table>
+
+<h4>2.1.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>Site 列表为空</td><td>"No sites available"</td><td>画布居中文字</td></tr>
+<tr><td>链路数据为空</td><td>不显示连线，无额外提示</td><td>静默处理</td></tr>
+<tr><td>Globe View 加载中</td><td>显示 Loading 动画</td><td>加载态</td></tr>
+</tbody>
+</table>
+
+<h4>2.1.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>Site 数据加载失败</td><td>保留画布空白状态</td><td>左侧 Overview 显示空列表</td></tr>
+<tr><td>FabricLink 数据缺失</td><td>仅渲染 Site 卡片，不渲染连线</td><td>画布无连线</td></tr>
+<tr><td>Site 坐标数据异常</td><td>使用默认网格布局</td><td>卡片按网格排列</td></tr>
+<tr><td>浏览器不支持 SVG</td><td>降级为文本列表</td><td>显示站点列表</td></tr>
+</tbody>
+</table>
+
+<p><strong>异常恢复流程：</strong></p>
+<ul>
+<li>数据异常 → 用户点击工具栏刷新按钮 → 重置所有状态（缩放、平移、选中、展开） → 重新加载数据</li>
+</ul>
+
+<h4>2.1.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看全局拓扑 + 所有站点</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看全局拓扑 + 授权站点</td><td>仅可展开授权站点</td></tr>
+<tr><td>Viewer</td><td>查看全局拓扑</td><td>只读，不可操作</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制，所有用户可查看完整拓扑。后续版本按上表实现。</blockquote>
+
+<h4>2.1.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>功能边界：</strong> 本期仅支持物理拓扑展示，不支持逻辑拓扑 / 虚拟网络拓扑 / Overlay 拓扑</li>
+<li><strong>数据约束：</strong> 当前使用 Mock 数据（<code>constants.tsx</code>），后续对接后端 REST API</li>
+<li><strong>设备约束：</strong> 支持 Campus（Core/Aggregation/Access/AP/Camera）、DataCenter（Spine/Leaf/Border/Optical）、Optical（OTN）三种场景设备</li>
+<li><strong>布局约束：</strong> Site 卡片折叠态固定 160×140px，展开态固定 480×380px；2×2 网格布局</li>
+<li><strong>性能约束：</strong> 当前无虚拟化渲染，大规模场景（&gt;100 Site）可能存在性能问题</li>
+<li><strong>视图约束：</strong> Globe View 使用 SVG + 数学投影实现，非真实 WebGL 3D 渲染</li>
+</ul>
+
+<h4>2.1.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>拓扑页面首次加载</td><td>≤ 2000ms</td></tr>
+<tr><td>画布缩放/平移</td><td>≤ 16ms (60fps)</td></tr>
+<tr><td>抽屉面板切换</td><td>≤ 100ms</td></tr>
+<tr><td>SVG 导出</td><td>≤ 3000ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.2 Site 卡片展开/折叠 (TOPO-002)</h3>
+
+<h4>2.2.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 用户双击 Site 卡片时，卡片从折叠态（160×140px）展开为展开态（480×380px），展示该站点内部的设备拓扑。设备按角色层级自上而下排列：Core/Spine → Aggregation/Leaf → Access → AP/Camera。站内设备之间的链路以直线连接。再次双击已展开的 Site 卡片 Header 区域，卡片折叠回初始状态。</p>
+
+<p><strong>触发条件：</strong> 用户双击画布上的 Site 卡片。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>用户双击折叠态 Site 卡片</li>
+<li>系统将该 Site ID 加入 <code>expandedSites</code> Set</li>
+<li>加载该 Site 下所有 Device 数据（从 <code>MOCK_DEVICES</code> 中按 <code>siteId</code> 过滤）</li>
+<li>加载站内 Device 间链路数据（从 <code>SITE_INTERNAL_LINKS</code> 中按 Site ID 查找）</li>
+<li>按设备角色分层计算布局：
+  <ul>
+  <li>第一层（顶部）：Core / Spine 角色设备</li>
+  <li>第二层：Aggregation / Leaf 角色设备</li>
+  <li>第三层：Access / Border 角色设备</li>
+  <li>第四层（底部）：AP / Camera / OTN 角色设备</li>
+  </ul>
+</li>
+<li>渲染展开态卡片（<code>ExpandedSiteContent</code>），包含设备节点和站内链路</li>
+<li>如果相邻 Site 也已展开，同时渲染跨站设备链路曲线</li>
+</ul>
+
+<p><strong>输出结果：</strong> Site 卡片展开，显示站内设备拓扑图。</p>
+
+<h4>2.2.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Cisco DNA Center 的 Site Hierarchy 下钻模式：</p>
+<ul>
+<li>全局视图中 Site 以卡片形式展示，双击进入站内视图</li>
+<li>站内设备按网络层级（Core → Distribution → Access）分层排列</li>
+<li>本方案采用"就地展开"模式（而非跳转新页面），保持全局上下文</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户双击折叠态 Site 卡片
+  ↓
+系统查询该 Site 下的 Device 列表
+  ↓
+按角色分层排列设备节点
+  ↓
+渲染站内链路连线
+  ↓
+卡片尺寸从 160×140 扩展为 480×380
+  ↓
+画布自动调整布局（其他卡片位置不变）</code></pre>
+
+<p><strong>（三）用户交互流程</strong></p>
+
+<table>
+<thead><tr><th>用户操作</th><th>系统响应</th></tr></thead>
+<tbody>
+<tr><td>双击折叠态 Site 卡片</td><td>卡片展开，显示站内设备拓扑</td></tr>
+<tr><td>双击展开态 Site 卡片 Header</td><td>卡片折叠回 160×140px</td></tr>
+<tr><td>点击工具栏"展开全部"按钮</td><td>所有 Site 卡片同时展开</td></tr>
+<tr><td>点击工具栏"折叠全部"按钮</td><td>所有 Site 卡片同时折叠</td></tr>
+</tbody>
+</table>
+
+<h4>2.2.3 功能业务流程</h4>
+
+<pre><code>展开流程：
+  双击 Site 卡片
+    ↓
+  expandedSites.add(siteId)
+    ↓
+  过滤 MOCK_DEVICES（siteId 匹配）
+    ↓
+  按 role 分层：
+    tier1: Core, Spine
+    tier2: Aggregation, Leaf
+    tier3: Access, Border
+    tier4: AP, Camera, OTN, Optical
+    ↓
+  计算每层设备的 x/y 坐标（水平均匀分布，垂直按层级递增）
+    ↓
+  渲染 ExpandedSiteContent（设备节点 + 站内链路）
+    ↓
+  检查相邻 Site 是否也已展开 → 是则渲染跨站设备链路
+
+折叠流程：
+  双击展开态 Site 卡片 Header
+    ↓
+  expandedSites.delete(siteId)
+    ↓
+  清除该 Site 相关的选中状态（selectedDevice, selectedLink）
+    ↓
+  卡片恢复为 CollapsedSiteContent（160×140px）
+    ↓
+  移除相关跨站设备链路曲线</code></pre>
+
+<h4>2.2.4 原型界面</h4>
+
+<p><strong>折叠态 Site 卡片（160×140px）：</strong></p>
+
+<pre><code>┌──────────────────────────┐
+│  🏢 San Jose Campus      │
+│  Campus                  │
+│  ━━━━━━━━━━━━━━━━━━━━━━  │
+│  Health: 98%             │
+│  📦 12  ✅ 11  ⚠️ 2      │
+│  [Core] [Agg] [AP] [Cam] │
+└──────────────────────────┘</code></pre>
+
+<p><strong>展开态 Site 卡片（480×380px）：</strong></p>
+
+<pre><code>┌──────────────────────────────────────────────────┐
+│  🏢 San Jose Campus (Campus)  Health: 98%        │
+│  ─────────────────────────────────────────────── │
+│         [Core-01]    [Core-02]                   │  ← Tier 1: Core
+│            │  ╲      ╱  │                        │
+│         [Agg-01]    [Agg-02]                     │  ← Tier 2: Aggregation
+│            │            │                        │
+│       [Access-01]  [Access-02]                   │  ← Tier 3: Access
+│        ╱    ╲        ╱    ╲                      │
+│   [AP-01] [AP-02] [AP-03] [Cam-01] [Cam-02]     │  ← Tier 4: AP/Camera
+└──────────────────────────────────────────────────┘</code></pre>
+
+<h4>2.2.5 交互说明</h4>
+
+<ul>
+<li>当用户双击折叠态 Site 卡片时，系统应以动画过渡方式展开卡片（尺寸从 160×140 → 480×380）</li>
+<li>当用户双击展开态 Site 卡片的 Header 区域时，系统应折叠卡片回初始尺寸</li>
+<li>当用户双击展开态 Site 卡片内的设备节点时，系统不应触发折叠（双击事件仅在 Header 区域生效）</li>
+<li>当 Site 卡片展开时，系统应保持其他 Site 卡片的位置不变</li>
+<li>当用户点击工具栏"展开/折叠全部"按钮时，系统应同时展开或折叠所有 Site 卡片</li>
+<li>展开态卡片内的设备节点支持单击选中（触发 TOPO-003 设备详情）</li>
+<li>展开态卡片内的链路连线支持单击选中（触发 TOPO-004 链路详情）</li>
+</ul>
+
+<h4>2.2.6 列表字段</h4>
+
+<p><strong>展开态 Site 卡片 Header 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>name</td><td>Site.name</td><td>站点名称</td></tr>
+<tr><td>2</td><td>siteType</td><td>Site.siteType</td><td>站点类型</td></tr>
+<tr><td>3</td><td>health</td><td>Site.health</td><td>健康度百分比</td></tr>
+</tbody>
+</table>
+
+<p><strong>设备节点字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>设备图标</td><td>Device.role</td><td>按角色显示不同图标（Server/Wifi/Video 等）</td></tr>
+<tr><td>2</td><td>name</td><td>Device.name</td><td>设备名称（截断显示，最多 12 字符）</td></tr>
+<tr><td>3</td><td>status</td><td>Device.status</td><td>状态指示点（绿色=online, 灰色=offline, 蓝色=provisioning）</td></tr>
+</tbody>
+</table>
+
+<h4>2.2.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>Site 下无设备</td><td>展开后显示 "No devices in this site"</td><td>卡片内居中文字</td></tr>
+<tr><td>站内链路数据缺失</td><td>仅显示设备节点，不显示连线</td><td>静默处理</td></tr>
+<tr><td>设备名称过长</td><td>截断为 12 字符 + "..."</td><td>文字截断</td></tr>
+</tbody>
+</table>
+
+<h4>2.2.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>Device 数据加载失败</td><td>展开后显示空白区域</td><td>卡片展开但无设备节点</td></tr>
+<tr><td>设备角色未知</td><td>归入最底层（tier4）</td><td>设备显示在最底层</td></tr>
+<tr><td>站内链路引用不存在的设备 ID</td><td>跳过该链路，不渲染</td><td>部分链路缺失</td></tr>
+<tr><td>展开/折叠动画异常</td><td>直接切换尺寸，跳过动画</td><td>无过渡效果</td></tr>
+</tbody>
+</table>
+
+<h4>2.2.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>可展开所有 Site</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>仅可展开授权 Site</td><td>未授权 Site 双击无响应</td></tr>
+<tr><td>Viewer</td><td>不可展开</td><td>双击无响应</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制，所有用户可展开所有 Site。</blockquote>
+
+<h4>2.2.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>尺寸约束：</strong> 折叠态固定 160×140px，展开态固定 480×380px，不支持自定义尺寸</li>
+<li><strong>层级约束：</strong> 设备分层固定为 4 层（Core/Spine → Aggregation/Leaf → Access/Border → AP/Camera/OTN），不支持自定义层级</li>
+<li><strong>数量约束：</strong> 每层最多显示 6 个设备节点（超出部分水平压缩），单 Site 最多 50 个设备</li>
+<li><strong>动画约束：</strong> 当前版本无展开/折叠动画，直接切换尺寸</li>
+<li><strong>布局约束：</strong> 展开后其他 Site 卡片位置不自动调整，可能出现重叠（用户可手动拖拽调整）</li>
+</ul>
+
+<h4>2.2.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>Site 卡片展开</td><td>≤ 200ms</td></tr>
+<tr><td>Site 卡片折叠</td><td>≤ 200ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.3 站内设备详情 (TOPO-003)</h3>
+
+<h4>2.3.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 用户在展开的 Site 卡片中点击某个设备节点时，左侧抽屉面板切换为设备详情视图（<code>DeviceDetailView</code>）。面板展示设备基本信息（名称、型号、软件版本、MAC 地址、序列号、在线状态、运行时长、管理 IP），以及两个 Tab 页：设备邻居（Neighbors，显示与该设备直连的邻居设备列表，每行带 "View Connectivity" 链接）和告警列表（Alarms，显示该设备相关的活跃告警）。</p>
+
+<p><strong>触发条件：</strong> 用户单击展开态 Site 卡片内的设备节点。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>用户点击设备节点，系统设置 <code>selectedDeviceId = device.id</code></li>
+<li>左侧抽屉切换为 <code>DeviceDetailView</code> 组件</li>
+<li>从 <code>MOCK_DEVICES</code> 中查找设备完整信息</li>
+<li>从 <code>SITE_INTERNAL_LINKS</code> 和 <code>INTER_SITE_DEVICE_LINKS</code> 中查找与该设备相关的链路</li>
+<li>根据链路数据推导邻居设备列表</li>
+<li>从 <code>MOCK_ALARMS</code> 中过滤该设备相关的告警（<code>alarm.source === device.name</code>）</li>
+<li>渲染设备详情面板</li>
+</ul>
+
+<p><strong>输出结果：</strong> 左侧抽屉显示设备详情，包含基本信息、邻居列表、告警列表。</p>
+
+<h4>2.3.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Aruba Central 设备详情面板设计：</p>
+<ul>
+<li>设备基本信息以 Key-Value 列表展示</li>
+<li>邻居关系以列表形式展示，支持点击跳转</li>
+<li>告警以时间线形式展示，按严重程度着色</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户点击展开态 Site 内的设备节点
+  ↓
+系统查询设备基本信息
+  ↓
+系统查询设备邻居关系（站内链路 + 跨站链路）
+  ↓
+系统查询设备相关告警
+  ↓
+左侧抽屉渲染 DeviceDetailView
+  ↓
+用户可执行：
+  - 点击邻居设备的 "View Connectivity" → 跳转链路详情（TOPO-004）
+  - 点击 ← 返回按钮 → 返回 Global Overview</code></pre>
+
+<h4>2.3.3 功能业务流程</h4>
+
+<pre><code>设备详情加载流程：
+  selectedDeviceId 变更
+    ↓
+  从 MOCK_DEVICES 查找设备信息
+    ↓
+  从 SITE_INTERNAL_LINKS[siteId] 查找站内链路
+    ↓
+  从 INTER_SITE_DEVICE_LINKS 查找跨站链路
+    ↓
+  合并链路数据，推导邻居设备列表
+    ↓
+  从 MOCK_ALARMS 过滤设备告警
+    ↓
+  渲染 DeviceDetailView
+
+邻居跳转流程：
+  用户点击邻居设备行的 "View Connectivity"
+    ↓
+  系统构造 link 对象 { from, to, fromPort, toPort, type }
+    ↓
+  设置 selectedLink = link
+    ↓
+  左侧抽屉切换为 LinkDetailView（TOPO-004）</code></pre>
+
+<h4>2.3.4 原型界面</h4>
+
+<pre><code>┌─────────────────────────────────┐
+│ ← Device Details                │
+│ ─────────────────────────────── │
+│ 📦 WH-Core-01                  │
+│                                 │
+│ Model        AmpX-Core-96      │
+│ Software     PicOS 4.2.1       │
+│ MAC          AA:BB:CC:DD:EE:01 │
+│ Serial No.   SN-2024-001       │
+│ Status       🟢 Online          │
+│ Uptime       45d 12h 30m       │
+│ Mgmt IP      10.0.1.1          │
+│ ─────────────────────────────── │
+│ [设备邻居]  [告警列表]           │
+│ ─────────────────────────────── │
+│ 📦 WH-Core-02                  │
+│   Eth1/1 ↔ Eth1/1              │
+│   [View Connectivity]          │
+│ ─────────────────────────────── │
+│ 📦 WH-Agg-01                   │
+│   Eth1/2 ↔ Eth1/1              │
+│   [View Connectivity]          │
+└─────────────────────────────────┘</code></pre>
+
+<h4>2.3.5 交互说明</h4>
+
+<ul>
+<li>当用户点击展开态 Site 内的设备节点时，系统应在左侧抽屉显示该设备的详情面板</li>
+<li>当用户点击设备详情面板的 ← 返回按钮时，系统应清除 <code>selectedDeviceId</code>，左侧抽屉返回 Global Overview</li>
+<li>当用户点击"设备邻居" Tab 时，系统应显示与该设备直连的邻居设备列表</li>
+<li>当用户点击"告警列表" Tab 时，系统应显示该设备相关的活跃告警</li>
+<li>当用户点击邻居设备行的 "View Connectivity" 链接时，系统应切换到链路详情视图（TOPO-004），展示该设备与邻居设备之间的链路信息</li>
+<li>当用户在告警列表中点击某条告警时，当前版本无跳转操作（后续版本支持跳转告警详情）</li>
+<li>设备节点被选中时，画布上该节点应显示高亮效果（蓝色边框 + 阴影）</li>
+</ul>
+
+<h4>2.3.6 列表字段</h4>
+
+<p><strong>设备基本信息字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th><th>显示/隐藏</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>name</td><td>Device.name</td><td>设备名称</td><td>显示</td></tr>
+<tr><td>2</td><td>model</td><td>Device.model</td><td>设备型号（如 AmpX-Core-96）</td><td>显示</td></tr>
+<tr><td>3</td><td>softwareVersion</td><td>Mock 固定值</td><td>软件版本（如 PicOS 4.2.1）</td><td>显示</td></tr>
+<tr><td>4</td><td>mac</td><td>Device.mac</td><td>MAC 地址（如 AA:BB:CC:DD:EE:01）</td><td>显示</td></tr>
+<tr><td>5</td><td>serialNumber</td><td>Mock 固定值</td><td>设备序列号（如 SN-2024-001）</td><td>显示</td></tr>
+<tr><td>6</td><td>status</td><td>Device.status</td><td>在线状态（Online 🟢 / Offline 🔴 / Provisioning 🔵）</td><td>显示</td></tr>
+<tr><td>7</td><td>uptime</td><td>Mock 固定值</td><td>运行时长（如 45d 12h 30m）</td><td>显示</td></tr>
+<tr><td>8</td><td>ip</td><td>Device.ip</td><td>管理 IP 地址</td><td>显示</td></tr>
+</tbody>
+</table>
+
+<p><strong>设备邻居 Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>neighborName</td><td>邻居设备名称</td></tr>
+<tr><td>2</td><td>localPort</td><td>本端端口（如 Eth1/1）</td></tr>
+<tr><td>3</td><td>remotePort</td><td>对端端口（如 Eth1/1）</td></tr>
+<tr><td>4</td><td>action</td><td>"View Connectivity" 链接</td></tr>
+</tbody>
+</table>
+
+<p><strong>告警列表 Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>severity</td><td>Alarm.severity</td><td>告警级别图标（🔴 critical / 🟠 major / 🟡 minor / ⚪ warning）</td></tr>
+<tr><td>2</td><td>message</td><td>Alarm.message</td><td>告警消息</td></tr>
+<tr><td>3</td><td>time</td><td>Alarm.time</td><td>告警时间</td></tr>
+</tbody>
+</table>
+
+<h4>2.3.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>设备无邻居</td><td>"No neighbors found"</td><td>Tab 内居中文字</td></tr>
+<tr><td>设备无告警</td><td>"No active alarms"</td><td>Tab 内居中文字</td></tr>
+<tr><td>设备离线</td><td>Status 字段显示红色 "Offline"</td><td>状态标识</td></tr>
+<tr><td>设备 provisioning</td><td>Status 字段显示蓝色 "Provisioning"</td><td>状态标识</td></tr>
+</tbody>
+</table>
+
+<h4>2.3.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>设备 ID 在 MOCK_DEVICES 中不存在</td><td>显示 "Device not found"</td><td>抽屉显示错误提示</td></tr>
+<tr><td>邻居设备数据缺失</td><td>邻居 Tab 显示空列表</td><td>"No neighbors found"</td></tr>
+<tr><td>告警数据加载失败</td><td>告警 Tab 显示空列表</td><td>"No active alarms"</td></tr>
+<tr><td>"View Connectivity" 对应链路不存在</td><td>不触发跳转</td><td>链接不可点击</td></tr>
+</tbody>
+</table>
+
+<h4>2.3.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看所有设备详情</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看授权站点内设备详情</td><td>仅授权站点</td></tr>
+<tr><td>Viewer</td><td>查看设备基本信息</td><td>只读</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制。</blockquote>
+
+<h4>2.3.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>数据约束：</strong> 软件版本（softwareVersion）、序列号（serialNumber）、运行时长（uptime）当前为 Mock 固定值，后续对接设备管理 API</li>
+<li><strong>端口约束：</strong> 邻居设备的端口信息来源于链路数据，当前 Mock 数据中部分链路无端口信息</li>
+<li><strong>告警约束：</strong> 告警过滤基于 <code>alarm.source === device.name</code>，仅匹配设备名称</li>
+<li><strong>跳转约束：</strong> "View Connectivity" 仅支持跳转到链路详情，不支持跳转到邻居设备详情（需先返回再点击）</li>
+</ul>
+
+<h4>2.3.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>设备详情加载</td><td>≤ 100ms</td></tr>
+<tr><td>邻居列表渲染</td><td>≤ 50ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.4 站内链路详情 (TOPO-004)</h3>
+
+<h4>2.4.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 用户在展开的 Site 卡片中点击两个设备之间的链路连线时，左侧抽屉面板切换为链路详情视图（<code>LinkDetailView</code>）。面板标题显示 "Connectivity between DeviceA ↕ DeviceB"，展示链路关键指标（吞吐量 Throughput、带宽利用率 Bandwidth Utilization、丢弃率 Discard Rate、错误率 Error Rate、延迟 Latency），以及两个 Tab 页：成员链路（Members，显示该逻辑链路包含的物理成员链路列表）和告警列表（Alarms，显示该链路相关的活跃告警）。</p>
+
+<p><strong>触发条件：</strong> 用户单击展开态 Site 卡片内的设备间链路连线。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>用户点击链路连线，系统设置 <code>selectedLink = { from, to, fromPort, toPort, type }</code></li>
+<li>左侧抽屉切换为 <code>LinkDetailView</code> 组件</li>
+<li>从 <code>MOCK_DEVICES</code> 中查找两端设备信息</li>
+<li>生成 Mock 链路指标数据（吞吐量、带宽利用率、丢弃率、错误率、延迟）</li>
+<li>从 <code>MOCK_ALARMS</code> 中过滤两端设备相关的告警</li>
+<li>渲染链路详情面板</li>
+</ul>
+
+<p><strong>输出结果：</strong> 左侧抽屉显示链路详情，包含连接信息、链路指标、成员链路、告警列表。</p>
+
+<h4>2.4.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Arista CloudVision 链路详情设计：</p>
+<ul>
+<li>链路以两端设备 + 端口形式展示</li>
+<li>关键指标以仪表盘 / 数值形式展示</li>
+<li>成员链路（LAG/ECMP 场景）以列表展示</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户点击展开态 Site 内的设备间链路
+  ↓
+系统查询两端设备信息
+  ↓
+系统生成链路指标数据
+  ↓
+系统查询链路相关告警
+  ↓
+左侧抽屉渲染 LinkDetailView
+  ↓
+用户可执行：
+  - 点击设备名称 → 跳转设备详情（TOPO-003）
+  - 切换 Tab 查看成员链路 / 告警
+  - 点击 ← 返回按钮 → 返回上一视图</code></pre>
+
+<h4>2.4.3 功能业务流程</h4>
+
+<pre><code>链路详情加载流程：
+  selectedLink 变更
+    ↓
+  从 MOCK_DEVICES 查找 from/to 设备信息
+    ↓
+  生成 Mock 链路指标：
+    - Throughput: "2.4 Gbps"
+    - Bandwidth Utilization: "45%"
+    - Discard Rate: "0.01%"
+    - Error Rate: "0.001%"
+    - Latency: "0.5ms"
+    ↓
+  从 MOCK_ALARMS 过滤两端设备告警
+    ↓
+  渲染 LinkDetailView
+
+设备跳转流程：
+  用户点击链路详情中的设备名称
+    ↓
+  设置 selectedDeviceId = 点击的设备 ID
+    ↓
+  清除 selectedLink
+    ↓
+  左侧抽屉切换为 DeviceDetailView（TOPO-003）</code></pre>
+
+<h4>2.4.4 原型界面</h4>
+
+<pre><code>┌─────────────────────────────────┐
+│ ← Link Details                  │
+│ ─────────────────────────────── │
+│ Connectivity between            │
+│ 📦 WH-Core-01                  │
+│        ↕                        │
+│ 📦 WH-Agg-01                   │
+│ ─────────────────────────────── │
+│ LINK METRICS                    │
+│ Throughput       2.4 Gbps       │
+│ BW Utilization   45%            │
+│ Discard Rate     0.01%          │
+│ Error Rate       0.001%         │
+│ Latency          0.5ms          │
+│ ─────────────────────────────── │
+│ [成员链路]  [告警列表]           │
+│ ─────────────────────────────── │
+│ Eth1/2 ↔ Eth1/1  10G  🟢       │
+│ Eth1/3 ↔ Eth1/2  10G  🟢       │
+└─────────────────────────────────┘</code></pre>
+
+<h4>2.4.5 交互说明</h4>
+
+<ul>
+<li>当用户点击展开态 Site 内的设备间链路连线时，系统应在左侧抽屉显示链路详情面板</li>
+<li>当用户点击链路详情中的设备名称（DeviceA 或 DeviceB）时，系统应跳转到该设备的详情视图（TOPO-003）</li>
+<li>当用户点击 ← 返回按钮时，系统应清除 <code>selectedLink</code>，返回上一视图（如果之前是从设备详情跳转来的，返回设备详情；否则返回 Global Overview）</li>
+<li>当用户切换到"成员链路" Tab 时，系统应显示该逻辑链路包含的物理成员链路列表</li>
+<li>当用户切换到"告警列表" Tab 时，系统应显示两端设备相关的活跃告警</li>
+<li>链路连线被选中时，画布上该连线应显示高亮效果（加粗 + 颜色加深）</li>
+</ul>
+
+<h4>2.4.6 列表字段</h4>
+
+<p><strong>链路连接信息字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>fromDeviceName</td><td>Device.name (from)</td><td>本端设备名称（可点击）</td></tr>
+<tr><td>2</td><td>separator</td><td>固定值</td><td>"↕" 分隔符</td></tr>
+<tr><td>3</td><td>toDeviceName</td><td>Device.name (to)</td><td>对端设备名称（可点击）</td></tr>
+</tbody>
+</table>
+
+<p><strong>链路指标字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th><th>单位</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>throughput</td><td>吞吐量</td><td>Gbps / Mbps</td></tr>
+<tr><td>2</td><td>bandwidthUtilization</td><td>带宽利用率</td><td>%</td></tr>
+<tr><td>3</td><td>discardRate</td><td>丢弃率</td><td>%</td></tr>
+<tr><td>4</td><td>errorRate</td><td>错误率</td><td>%</td></tr>
+<tr><td>5</td><td>latency</td><td>延迟</td><td>ms</td></tr>
+</tbody>
+</table>
+
+<p><strong>成员链路 Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>localPort</td><td>本端端口（如 Eth1/2）</td></tr>
+<tr><td>2</td><td>remotePort</td><td>对端端口（如 Eth1/1）</td></tr>
+<tr><td>3</td><td>bandwidth</td><td>带宽（如 10G）</td></tr>
+<tr><td>4</td><td>status</td><td>状态指示点（🟢 active / 🟠 degraded）</td></tr>
+</tbody>
+</table>
+
+<p><strong>告警列表 Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>severity</td><td>Alarm.severity</td><td>告警级别图标</td></tr>
+<tr><td>2</td><td>message</td><td>Alarm.message</td><td>告警消息</td></tr>
+<tr><td>3</td><td>time</td><td>Alarm.time</td><td>告警时间</td></tr>
+</tbody>
+</table>
+
+<h4>2.4.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>成员链路为空</td><td>"No member links"</td><td>Tab 内居中文字</td></tr>
+<tr><td>告警为空</td><td>"No active alarms"</td><td>Tab 内居中文字</td></tr>
+<tr><td>链路指标数据缺失</td><td>显示 "N/A"</td><td>字段值占位</td></tr>
+</tbody>
+</table>
+
+<h4>2.4.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>链路两端设备 ID 不存在</td><td>显示 "Unknown Device"</td><td>设备名称显示为 Unknown</td></tr>
+<tr><td>链路指标数据加载失败</td><td>所有指标显示 "N/A"</td><td>指标区域显示占位符</td></tr>
+<tr><td>成员链路数据缺失</td><td>成员 Tab 显示空列表</td><td>"No member links"</td></tr>
+<tr><td>点击设备名称跳转失败</td><td>保持当前视图不变</td><td>无响应</td></tr>
+</tbody>
+</table>
+
+<h4>2.4.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看所有链路详情</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看授权站点内链路详情</td><td>仅授权站点</td></tr>
+<tr><td>Viewer</td><td>查看链路基本信息</td><td>只读</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制。</blockquote>
+
+<h4>2.4.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>指标约束：</strong> 链路指标当前为 Mock 固定值，后续对接监控 API 获取实时数据</li>
+<li><strong>成员链路约束：</strong> 成员链路数据来源于 <code>SITE_INTERNAL_LINKS</code>，当前 Mock 数据中部分链路无端口/带宽信息</li>
+<li><strong>告警约束：</strong> 告警过滤基于两端设备名称匹配，可能存在误匹配</li>
+<li><strong>跳转约束：</strong> 从链路详情跳转到设备详情后，无法直接返回链路详情（需重新点击链路）</li>
+</ul>
+
+<h4>2.4.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>链路详情加载</td><td>≤ 100ms</td></tr>
+<tr><td>成员链路渲染</td><td>≤ 50ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.5 Site 邻居关系视图 (TOPO-005)</h3>
+
+<h4>2.5.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 用户单击画布上未展开（折叠态）的 Site 卡片时，左侧抽屉面板切换为 Site 邻居关系视图（<code>SiteInterView</code>）。面板标题为 "Site or Selected Link"，副标题为 "Current Site: {SiteName}"。面板包含两个 Tab 页：Neighbors（显示与该站点有链路连接的邻居站点列表，每行包含站点名称、站点类型、链路数量、状态指示点）和 Members（显示该站点所有跨站链路的设备对列表，即所有从该站点出发或到达该站点的 <code>SITE_NEIGHBOR_LINKS</code> 记录）。</p>
+
+<p><strong>触发条件：</strong> 用户单击画布上折叠态的 Site 卡片。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>用户单击折叠态 Site 卡片，系统设置 <code>selectedSiteNeighborId = site.id</code></li>
+<li>左侧抽屉切换为 <code>SiteInterView</code> 组件</li>
+<li>从 <code>FABRIC_LINKS</code> 中查找与该 Site 相关的所有链路，推导邻居站点列表</li>
+<li>从 <code>SITE_NEIGHBOR_LINKS</code> 中查找与该 Site 相关的所有跨站设备链路</li>
+<li>渲染 Neighbors Tab（邻居站点列表）和 Members Tab（设备对列表）</li>
+</ul>
+
+<p><strong>输出结果：</strong> 左侧抽屉显示 Site 邻居关系视图，包含邻居站点列表和跨站链路设备对。</p>
+
+<h4>2.5.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Cisco DNA Center Site Topology 设计：</p>
+<ul>
+<li>站点级别的邻居关系以列表形式展示</li>
+<li>支持从站点级别下钻到设备级别的链路成员</li>
+<li>邻居状态通过颜色指示点直观展示</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户单击折叠态 Site 卡片
+  ↓
+系统查询该 Site 的邻居站点（通过 FABRIC_LINKS）
+  ↓
+系统查询该 Site 的跨站设备链路（通过 SITE_NEIGHBOR_LINKS）
+  ↓
+左侧抽屉渲染 SiteInterView
+  ↓
+用户可执行：
+  - 在 Neighbors Tab 查看邻居站点列表
+  - 在 Members Tab 查看跨站设备对列表
+  - 点击 ← 返回按钮 → 返回 Global Overview</code></pre>
+
+<h4>2.5.3 功能业务流程</h4>
+
+<pre><code>Site 邻居关系加载流程：
+  selectedSiteNeighborId 变更
+    ↓
+  从 MOCK_SITES 查找当前 Site 信息
+    ↓
+  从 FABRIC_LINKS 过滤：
+    link.from === siteId || link.to === siteId
+    ↓
+  推导邻居站点列表：
+    对每条 FabricLink，取对端 Site ID
+    从 MOCK_SITES 查找对端 Site 信息
+    统计每个邻居的链路数量
+    ↓
+  从 SITE_NEIGHBOR_LINKS 过滤：
+    link.fromSiteId === siteId || link.toSiteId === siteId
+    ↓
+  渲染 SiteInterView（Neighbors Tab + Members Tab）
+
+邻居站点点击流程：
+  用户点击 Neighbors Tab 中的某个邻居站点
+    ↓
+  画布高亮该邻居 Site 卡片
+    ↓
+  （可选）切换 selectedSiteNeighborId 为该邻居站点</code></pre>
+
+<h4>2.5.4 原型界面</h4>
+
+<pre><code>┌─────────────────────────────────┐
+│ ← Site or Selected Link        │
+│   Current Site: San Jose Campus │
+│ ─────────────────────────────── │
+│ [Neighbors]  [Members]          │
+│ ─────────────────────────────── │
+│                                 │
+│ 🏢 Frankfurt Data Center       │
+│    DataCenter · 2 links · 🟢   │
+│ ─────────────────────────────── │
+│ 🏢 Shanghai Branch             │
+│    Campus · 1 link · 🟢        │
+│ ─────────────────────────────── │
+│ 🏢 London Optical Transport    │
+│    Optical · 1 link · 🟢       │
+│                                 │
+└─────────────────────────────────┘
+
+Members Tab:
+┌─────────────────────────────────┐
+│ [Neighbors]  [Members]          │
+│ ─────────────────────────────── │
+│ WH-Core-01 ↔ BJ-Spine-01      │
+│ WH-Core-02 ↔ BJ-Spine-02      │
+│ WH-Core-01 ↔ NJ-Core-01       │
+│ WH-Core-01 ↔ LDN-OTN-01       │
+└─────────────────────────────────┘</code></pre>
+
+<h4>2.5.5 交互说明</h4>
+
+<ul>
+<li>当用户单击折叠态 Site 卡片时，系统应在左侧抽屉显示该站点的邻居关系视图</li>
+<li>当用户单击折叠态 Site 卡片时，画布上该卡片应显示高亮效果（蓝色边框）</li>
+<li>当用户点击 Neighbors Tab 时，系统应显示邻居站点列表</li>
+<li>当用户点击 Members Tab 时，系统应显示该站点所有跨站链路的设备对列表</li>
+<li>当用户点击 ← 返回按钮时，系统应清除 <code>selectedSiteNeighborId</code>，左侧抽屉返回 Global Overview</li>
+<li>当用户点击画布空白区域时，系统应清除选中状态，返回 Global Overview</li>
+<li>当用户双击已选中的 Site 卡片时，系统应展开该 Site（TOPO-002），同时清除邻居关系视图</li>
+</ul>
+
+<h4>2.5.6 列表字段</h4>
+
+<p><strong>Neighbors Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>siteName</td><td>Site.name</td><td>邻居站点名称</td></tr>
+<tr><td>2</td><td>siteType</td><td>Site.siteType</td><td>站点类型（DataCenter / Campus / Optical）</td></tr>
+<tr><td>3</td><td>linkCount</td><td>计算字段</td><td>与当前站点之间的链路数量</td></tr>
+<tr><td>4</td><td>statusDot</td><td>FabricLink.quality</td><td>状态指示点（🟢 optimal / 🟠 congested / 🔴 degraded）</td></tr>
+</tbody>
+</table>
+
+<p><strong>Members Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>fromDeviceName</td><td>SiteNeighborLink.fromDeviceName</td><td>本端设备名称</td></tr>
+<tr><td>2</td><td>separator</td><td>固定值</td><td>"↔" 分隔符</td></tr>
+<tr><td>3</td><td>toDeviceName</td><td>SiteNeighborLink.toDeviceName</td><td>对端设备名称</td></tr>
+</tbody>
+</table>
+
+<h4>2.5.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>无邻居站点</td><td>"No neighbors"</td><td>Tab 内居中文字</td></tr>
+<tr><td>无跨站链路成员</td><td>"No connections"</td><td>Tab 内居中文字</td></tr>
+<tr><td>站点名称过长</td><td>截断为 20 字符 + "..."</td><td>文字截断</td></tr>
+</tbody>
+</table>
+
+<h4>2.5.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>Site ID 在 MOCK_SITES 中不存在</td><td>显示 "Site not found"</td><td>抽屉显示错误提示</td></tr>
+<tr><td>FABRIC_LINKS 中无该 Site 的链路</td><td>Neighbors Tab 显示空列表</td><td>"No neighbors"</td></tr>
+<tr><td>SITE_NEIGHBOR_LINKS 中无该 Site 的记录</td><td>Members Tab 显示空列表</td><td>"No connections"</td></tr>
+<tr><td>邻居站点 ID 在 MOCK_SITES 中不存在</td><td>跳过该邻居，不显示</td><td>部分邻居缺失</td></tr>
+</tbody>
+</table>
+
+<h4>2.5.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看所有站点邻居关系</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看授权站点的邻居关系</td><td>仅授权站点</td></tr>
+<tr><td>Viewer</td><td>查看邻居关系</td><td>只读</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制。</blockquote>
+
+<h4>2.5.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>触发约束：</strong> 仅折叠态 Site 卡片的单击触发邻居关系视图；展开态 Site 卡片的单击不触发（展开态内部点击触发设备/链路详情）</li>
+<li><strong>数据约束：</strong> 邻居站点列表基于 <code>FABRIC_LINKS</code> 推导，Members 列表基于 <code>SITE_NEIGHBOR_LINKS</code> 查询</li>
+<li><strong>状态约束：</strong> 邻居状态指示点取该邻居与当前站点之间最差链路的质量状态</li>
+<li><strong>交互约束：</strong> Neighbors Tab 中的邻居站点当前不支持点击跳转（后续版本支持）</li>
+</ul>
+
+<h4>2.5.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>邻居关系加载</td><td>≤ 100ms</td></tr>
+<tr><td>站点搜索过滤</td><td>≤ 50ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.6 Site 间链路关系视图 (TOPO-006)</h3>
+
+<h4>2.6.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 用户点击画布上两个 Site 之间的连线时，左侧抽屉面板切换为 Site 间链路关系视图（复用 <code>SiteInterView</code> 组件）。面板标题为 "Site or Selected Link"，副标题为 "SiteA ⟷ SiteB"。面板包含两个 Tab 页：Neighbors（显示两端站点的邻居列表）和 Members（显示该条连线上的设备对列表，即 <code>SITE_NEIGHBOR_LINKS</code> 中 fromSiteId/toSiteId 匹配该两个站点的记录）。连线在画布上高亮显示（加粗 + 发光效果）。</p>
+
+<p><strong>触发条件：</strong> 用户单击画布上 Site 间的连线。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>用户点击 Site 间连线，系统设置 <code>selectedInterSiteLink = { fromSiteId, toSiteId }</code></li>
+<li>左侧抽屉切换为 <code>SiteInterView</code> 组件（链路模式）</li>
+<li>从 <code>MOCK_SITES</code> 中查找两端站点信息</li>
+<li>从 <code>SITE_NEIGHBOR_LINKS</code> 中过滤该两个站点之间的跨站设备链路</li>
+<li>画布上该连线高亮（<code>strokeWidth</code> 加粗 + <code>filter: drop-shadow</code> 发光）</li>
+<li>渲染 Neighbors Tab 和 Members Tab</li>
+</ul>
+
+<p><strong>输出结果：</strong> 左侧抽屉显示 Site 间链路关系视图，画布上连线高亮。</p>
+
+<h4>2.6.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Juniper Mist 的 WAN Link 详情设计：</p>
+<ul>
+<li>站点间链路以聚合视图展示</li>
+<li>支持下钻到设备级别的成员链路</li>
+<li>链路状态通过颜色和粗细直观展示</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户点击 Site 间连线
+  ↓
+系统识别连线两端 Site ID
+  ↓
+系统查询两站之间的跨站设备链路
+  ↓
+画布上连线高亮（加粗 + 发光）
+  ↓
+左侧抽屉渲染 SiteInterView（链路模式）
+  ↓
+用户可执行：
+  - 在 Neighbors Tab 查看两端站点的邻居
+  - 在 Members Tab 查看该连线上的设备对
+  - 点击 ← 返回按钮 → 返回 Global Overview</code></pre>
+
+<h4>2.6.3 功能业务流程</h4>
+
+<pre><code>Site 间链路关系加载流程：
+  selectedInterSiteLink 变更
+    ↓
+  从 MOCK_SITES 查找 fromSite 和 toSite 信息
+    ↓
+  从 SITE_NEIGHBOR_LINKS 过滤：
+    (link.fromSiteId === fromSiteId &amp;&amp; link.toSiteId === toSiteId)
+    || (link.fromSiteId === toSiteId &amp;&amp; link.toSiteId === fromSiteId)
+    ↓
+  画布上高亮该连线：
+    strokeWidth: 3 → 5
+    添加 drop-shadow 发光效果
+    ↓
+  渲染 SiteInterView（副标题 "SiteA ⟷ SiteB"）
+
+连线取消选中流程：
+  用户点击画布空白区域
+    ↓
+  清除 selectedInterSiteLink
+    ↓
+  连线恢复正常样式
+    ↓
+  左侧抽屉返回 Global Overview</code></pre>
+
+<h4>2.6.4 原型界面</h4>
+
+<pre><code>┌─────────────────────────────────┐
+│ ← Site or Selected Link        │
+│   San Jose Campus ⟷            │
+│   Frankfurt Data Center         │
+│ ─────────────────────────────── │
+│ [Neighbors]  [Members]          │
+│ ─────────────────────────────── │
+│                                 │
+│ Members:                        │
+│ WH-Core-01 ↔ BJ-Spine-01      │
+│   Eth1/49 → Eth1/1  10G  🟢   │
+│ ─────────────────────────────── │
+│ WH-Core-02 ↔ BJ-Spine-02      │
+│   Eth1/49 → Eth1/1  10G  🟢   │
+│                                 │
+└─────────────────────────────────┘</code></pre>
+
+<h4>2.6.5 交互说明</h4>
+
+<ul>
+<li>当用户点击 Site 间连线时，系统应高亮该连线（加粗 <code>strokeWidth: 5</code> + 发光 <code>drop-shadow</code>）</li>
+<li>当用户点击 Site 间连线时，系统应在左侧抽屉显示该连线的链路关系视图</li>
+<li>当用户点击 Neighbors Tab 时，系统应显示两端站点各自的邻居列表</li>
+<li>当用户点击 Members Tab 时，系统应显示该条连线上的设备对列表（仅该两个站点之间的跨站链路）</li>
+<li>当用户点击 ← 返回按钮时，系统应清除 <code>selectedInterSiteLink</code>，连线恢复正常样式，左侧抽屉返回 Global Overview</li>
+<li>当用户点击画布空白区域时，系统应清除选中状态，连线恢复正常样式</li>
+<li>当用户点击另一条 Site 间连线时，系统应切换高亮到新连线，更新抽屉内容</li>
+</ul>
+
+<h4>2.6.6 列表字段</h4>
+
+<p><strong>副标题字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>fromSiteName</td><td>Site.name (from)</td><td>起始站点名称</td></tr>
+<tr><td>2</td><td>separator</td><td>固定值</td><td>"⟷" 分隔符</td></tr>
+<tr><td>3</td><td>toSiteName</td><td>Site.name (to)</td><td>目标站点名称</td></tr>
+</tbody>
+</table>
+
+<p><strong>Neighbors Tab 字段：</strong>（同 TOPO-005 Neighbors Tab）</p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>siteName</td><td>邻居站点名称</td></tr>
+<tr><td>2</td><td>siteType</td><td>站点类型</td></tr>
+<tr><td>3</td><td>linkCount</td><td>链路数量</td></tr>
+<tr><td>4</td><td>statusDot</td><td>状态指示点</td></tr>
+</tbody>
+</table>
+
+<p><strong>Members Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>fromDeviceName</td><td>SiteNeighborLink.fromDeviceName</td><td>本端设备名称</td></tr>
+<tr><td>2</td><td>fromPort</td><td>SiteNeighborLink.fromPort</td><td>本端端口</td></tr>
+<tr><td>3</td><td>toDeviceName</td><td>SiteNeighborLink.toDeviceName</td><td>对端设备名称</td></tr>
+<tr><td>4</td><td>toPort</td><td>SiteNeighborLink.toPort</td><td>对端端口</td></tr>
+<tr><td>5</td><td>bandwidth</td><td>SiteNeighborLink.bandwidth</td><td>带宽（如 10G）</td></tr>
+<tr><td>6</td><td>status</td><td>SiteNeighborLink.status</td><td>状态（🟢 active / 🟠 degraded）</td></tr>
+</tbody>
+</table>
+
+<h4>2.6.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>该连线无设备级链路成员</td><td>"No connections"</td><td>Tab 内居中文字</td></tr>
+<tr><td>站点名称过长</td><td>截断为 18 字符 + "..."</td><td>文字截断</td></tr>
+<tr><td>连线被选中</td><td>连线加粗 + 发光效果</td><td>视觉反馈</td></tr>
+</tbody>
+</table>
+
+<h4>2.6.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>连线两端 Site ID 不存在</td><td>显示 "Unknown Site"</td><td>副标题显示 Unknown</td></tr>
+<tr><td>SITE_NEIGHBOR_LINKS 中无匹配记录</td><td>Members Tab 显示空列表</td><td>"No connections"</td></tr>
+<tr><td>连线高亮渲染失败</td><td>保持默认样式</td><td>无高亮效果</td></tr>
+<tr><td>两端站点数据不一致</td><td>以实际数据为准</td><td>可能显示不完整</td></tr>
+</tbody>
+</table>
+
+<h4>2.6.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看所有 Site 间链路关系</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看涉及授权站点的链路关系</td><td>仅授权站点相关</td></tr>
+<tr><td>Viewer</td><td>查看链路关系</td><td>只读</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制。</blockquote>
+
+<h4>2.6.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>数据约束：</strong> Members 列表仅显示 <code>SITE_NEIGHBOR_LINKS</code> 中匹配该两个站点的记录，不包含其他站点的链路</li>
+<li><strong>高亮约束：</strong> 连线高亮效果使用 SVG <code>filter: drop-shadow</code>，部分浏览器可能渲染差异</li>
+<li><strong>交互约束：</strong> 点击连线的判定区域为连线周围 8px 范围（<code>strokeWidth</code> 扩大点击热区）</li>
+<li><strong>与 TOPO-005 的区别：</strong> TOPO-005 展示某个站点的所有邻居关系；TOPO-006 展示两个特定站点之间的链路关系</li>
+</ul>
+
+<h4>2.6.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>链路关系加载</td><td>≤ 100ms</td></tr>
+<tr><td>连线高亮渲染</td><td>≤ 16ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.7 跨站设备级链路 (TOPO-007)</h3>
+
+<h4>2.7.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 当画布上两个相邻的 Site 卡片都处于展开态时，系统自动渲染两个站点之间的设备级跨站链路。这些链路以曲线（Bezier Curve）形式显示，从一个站点内的设备节点连接到另一个站点内的设备节点，曲线上带有带宽标签（如 "10G"）。用户点击跨站设备链路曲线时，左侧抽屉显示链路详情（复用 TOPO-004 的 <code>LinkDetailView</code>）。</p>
+
+<p><strong>触发条件：</strong> 两个有链路关系的 Site 卡片同时处于展开态。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>系统检测 <code>expandedSites</code> 中是否有两个站点同时展开且存在 <code>INTER_SITE_DEVICE_LINKS</code> 记录</li>
+<li>对于每条跨站设备链路，计算起始设备节点和目标设备节点在画布上的绝对坐标</li>
+<li>使用 Bezier 曲线（<code>&lt;path&gt;</code> 元素）连接两个设备节点，曲线向上弯曲以避免与 Site 卡片重叠</li>
+<li>在曲线中点位置渲染带宽标签（如 "10G"）</li>
+<li>曲线颜色根据链路状态着色：<code>active</code>（绿色）、<code>degraded</code>（橙色）</li>
+<li>用户点击曲线时，系统设置 <code>selectedLink</code> 并在左侧抽屉显示 <code>LinkDetailView</code></li>
+</ul>
+
+<p><strong>输出结果：</strong> 画布上显示跨站设备级链路曲线，点击后左侧抽屉显示链路详情。</p>
+
+<h4>2.7.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Arista CloudVision 的跨站链路展示：</p>
+<ul>
+<li>站点展开后，跨站设备链路以曲线形式直观展示</li>
+<li>曲线颜色和标签提供链路状态和带宽信息</li>
+<li>点击曲线可查看详细的链路信息</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>两个相邻 Site 同时展开
+  ↓
+系统查询 INTER_SITE_DEVICE_LINKS
+  ↓
+过滤出两个展开站点之间的设备链路
+  ↓
+计算每条链路的起始/目标设备节点坐标
+  ↓
+渲染 Bezier 曲线 + 带宽标签
+  ↓
+用户点击曲线 → 左侧抽屉显示 LinkDetailView</code></pre>
+
+<h4>2.7.3 功能业务流程</h4>
+
+<pre><code>跨站链路渲染流程：
+  expandedSites 变更
+    ↓
+  遍历 INTER_SITE_DEVICE_LINKS
+    ↓
+  对每条链路：
+    检查 fromDevice.siteId 和 toDevice.siteId 是否都在 expandedSites 中
+    ↓
+    是 → 计算 fromDevice 在画布上的绝对坐标 (x1, y1)
+         计算 toDevice 在画布上的绝对坐标 (x2, y2)
+         计算 Bezier 控制点（曲线向上弯曲）
+         渲染 &lt;path&gt; 元素 + 带宽标签
+    否 → 跳过
+
+跨站链路点击流程：
+  用户点击跨站设备链路曲线
+    ↓
+  系统构造 link 对象：
+    { from: fromDeviceId, to: toDeviceId, fromPort, toPort, type: 'cross-site' }
+    ↓
+  设置 selectedLink = link
+    ↓
+  左侧抽屉切换为 LinkDetailView（复用 TOPO-004）</code></pre>
+
+<h4>2.7.4 原型界面</h4>
+
+<pre><code>┌─────────── Site A (展开) ───────────┐     ┌─────────── Site B (展开) ───────────┐
+│                                      │     │                                      │
+│  [Core-01]    [Core-02]              │     │  [Spine-01]    [Spine-02]            │
+│      │            │                  │     │      │              │                │
+│  [Agg-01]    [Agg-02]               │     │  [Leaf-01]    [Leaf-02]              │
+│      │            │                  │     │      │              │                │
+│  [Access-01] [Access-02]            │     │  [Border-01]  [Border-02]            │
+│                                      │     │                                      │
+└──────────────────────────────────────┘     └──────────────────────────────────────┘
+         │                                              ↑
+         └──────── 10G (曲线，绿色) ────────────────────┘
+              Core-01 Eth1/49 → Spine-01 Eth1/1</code></pre>
+
+<h4>2.7.5 交互说明</h4>
+
+<ul>
+<li>当两个相邻 Site 同时展开时，系统应自动渲染跨站设备链路曲线</li>
+<li>当用户点击跨站设备链路曲线时，系统应在左侧抽屉显示链路详情（复用 TOPO-004 LinkDetailView）</li>
+<li>当用户点击跨站链路曲线时，画布上该曲线应高亮（加粗 + 颜色加深）</li>
+<li>当任一 Site 折叠时，系统应移除相关的跨站设备链路曲线</li>
+<li>跨站链路曲线应使用 Bezier 曲线，向上弯曲以避免与 Site 卡片重叠</li>
+<li>曲线中点位置应显示带宽标签（如 "10G"），标签背景为半透明白色</li>
+<li>曲线颜色：<code>active</code> 状态为绿色（<code>#22c55e</code>），<code>degraded</code> 状态为橙色（<code>#f97316</code>）</li>
+</ul>
+
+<h4>2.7.6 列表字段</h4>
+
+<p><strong>跨站链路曲线标签字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>bandwidth</td><td>DeviceConnection.bandwidth</td><td>带宽标签（如 "10G"）</td></tr>
+</tbody>
+</table>
+
+<p><strong>链路详情字段：</strong>（复用 TOPO-004 LinkDetailView 字段）</p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>fromDeviceName</td><td>本端设备名称</td></tr>
+<tr><td>2</td><td>fromPort</td><td>本端端口</td></tr>
+<tr><td>3</td><td>toDeviceName</td><td>对端设备名称</td></tr>
+<tr><td>4</td><td>toPort</td><td>对端端口</td></tr>
+<tr><td>5</td><td>bandwidth</td><td>带宽</td></tr>
+<tr><td>6</td><td>status</td><td>链路状态</td></tr>
+<tr><td>7</td><td>链路指标</td><td>吞吐量、带宽利用率、丢弃率、错误率、延迟</td></tr>
+</tbody>
+</table>
+
+<h4>2.7.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>两站之间无跨站设备链路</td><td>不显示曲线，无额外提示</td><td>静默处理</td></tr>
+<tr><td>设备节点坐标计算失败</td><td>不渲染该条曲线</td><td>静默处理</td></tr>
+<tr><td>带宽标签过长</td><td>截断为 6 字符</td><td>文字截断</td></tr>
+</tbody>
+</table>
+
+<h4>2.7.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>跨站链路引用的设备不在展开的 Site 中</td><td>跳过该链路，不渲染</td><td>部分曲线缺失</td></tr>
+<tr><td>设备节点坐标计算异常（NaN）</td><td>跳过该链路</td><td>部分曲线缺失</td></tr>
+<tr><td>Bezier 曲线渲染异常</td><td>降级为直线连接</td><td>曲线变为直线</td></tr>
+<tr><td>点击曲线判定失败</td><td>扩大点击热区（<code>strokeWidth: 8</code>）</td><td>需精确点击</td></tr>
+</tbody>
+</table>
+
+<h4>2.7.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看所有跨站设备链路</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看涉及授权站点的跨站链路</td><td>仅授权站点相关</td></tr>
+<tr><td>Viewer</td><td>查看跨站链路</td><td>只读</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制。</blockquote>
+
+<h4>2.7.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>触发约束：</strong> 仅当两个 Site 同时展开时才渲染跨站设备链路，单个 Site 展开不显示</li>
+<li><strong>数据约束：</strong> 跨站链路数据来源于 <code>INTER_SITE_DEVICE_LINKS</code>，当前 Mock 数据仅包含部分站点间的设备链路</li>
+<li><strong>渲染约束：</strong> Bezier 曲线控制点计算基于两个 Site 卡片的相对位置，卡片位置变化时曲线自动更新</li>
+<li><strong>性能约束：</strong> 大量跨站链路（&gt;20 条）可能影响渲染性能</li>
+<li><strong>复用约束：</strong> 点击跨站链路曲线后的详情面板完全复用 TOPO-004 的 <code>LinkDetailView</code>，无额外定制</li>
+</ul>
+
+<h4>2.7.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>跨站链路渲染</td><td>≤ 200ms</td></tr>
+<tr><td>曲线点击响应</td><td>≤ 100ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.8 全局概览面板 (TOPO-008)</h3>
+
+<h4>2.8.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 左侧抽屉面板的默认视图为全局概览面板（<code>GlobalOverview</code>）。当用户未选中任何对象（Site、Device、Link）时，左侧抽屉显示 Global Overview。面板包含以下内容：</p>
+
+<ul>
+<li><strong>Header：</strong> "Overview" 标题</li>
+<li><strong>全局健康度：</strong> 3 个图标分别代表 DataCenter、Campus、Optical 三种站点类型，每个图标下方显示该类型站点的平均健康度评分</li>
+<li><strong>关键指标：</strong> 站点总数（Site Count）、站点类型分布（各类型占比进度条）、设备总数（Device Count）</li>
+<li><strong>两个 Tab 页：</strong>
+  <ul>
+  <li>站点列表（Sites）：可搜索的站点列表，每行显示站点名称、类型、健康度、设备数</li>
+  <li>告警列表（Alarms）：活跃告警列表，按严重程度排序</li>
+  </ul>
+</li>
+</ul>
+
+<p><strong>触发条件：</strong> 用户进入拓扑页面（默认显示）；或用户清除所有选中状态（点击画布空白区域、点击返回按钮）。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>从 <code>MOCK_SITES</code> 计算全局健康度（按 siteType 分组取平均值）</li>
+<li>从 <code>MOCK_SITES</code> 计算关键指标（站点总数、类型分布、设备总数）</li>
+<li>从 <code>MOCK_ALARMS</code> 过滤活跃告警（<code>status === 'active'</code>）</li>
+<li>渲染 GlobalOverview 面板</li>
+</ul>
+
+<p><strong>输出结果：</strong> 左侧抽屉显示全局概览面板。</p>
+
+<h4>2.8.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Cisco DNA Center Dashboard 设计：</p>
+<ul>
+<li>全局健康度以图标 + 评分形式直观展示</li>
+<li>关键指标以数字 + 进度条形式展示</li>
+<li>站点列表支持搜索和过滤</li>
+<li>告警列表按严重程度排序，支持快速定位</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户进入拓扑页面 / 清除选中状态
+  ↓
+系统计算全局健康度（按站点类型分组）
+  ↓
+系统计算关键指标（站点数、类型分布、设备数）
+  ↓
+系统加载活跃告警列表
+  ↓
+左侧抽屉渲染 GlobalOverview
+  ↓
+用户可执行：
+  - 在站点列表中搜索站点
+  - 点击站点列表中的站点 → 画布定位到该站点
+  - 查看告警列表</code></pre>
+
+<h4>2.8.3 功能业务流程</h4>
+
+<pre><code>全局概览加载流程：
+  无选中状态（默认）
+    ↓
+  计算全局健康度：
+    DC 健康度 = avg(MOCK_SITES.filter(s =&gt; s.siteType === 'DataCenter').map(s =&gt; s.health))
+    Campus 健康度 = avg(MOCK_SITES.filter(s =&gt; s.siteType === 'Campus').map(s =&gt; s.health))
+    Optical 健康度 = avg(MOCK_SITES.filter(s =&gt; s.siteType === 'Optical').map(s =&gt; s.health))
+    ↓
+  计算关键指标：
+    站点总数 = MOCK_SITES.length
+    DC 数量 / Campus 数量 / Optical 数量
+    设备总数 = sum(MOCK_SITES.map(s =&gt; s.deviceCount))
+    ↓
+  加载活跃告警：
+    MOCK_ALARMS.filter(a =&gt; a.status === 'active')
+    ↓
+  渲染 GlobalOverview
+
+站点搜索流程：
+  用户在搜索框输入关键词
+    ↓
+  实时过滤站点列表（匹配 name 或 location）
+    ↓
+  更新站点列表显示</code></pre>
+
+<h4>2.8.4 原型界面</h4>
+
+<pre><code>┌─────────────────────────────────┐
+│ Overview                        │
+│ ─────────────────────────────── │
+│ GLOBAL HEALTH                   │
+│                                 │
+│  🏢 DC    🏫 Campus   🔗 Optical│
+│   100       95          95      │
+│ ─────────────────────────────── │
+│ KEY METRICS                     │
+│                                 │
+│ Sites           4               │
+│ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━  │
+│ DataCenter  ████░░░░░░  1 (25%) │
+│ Campus      ████████░░  2 (50%) │
+│ Optical     ████░░░░░░  1 (25%) │
+│                                 │
+│ Devices         68              │
+│ ─────────────────────────────── │
+│ [站点列表]  [告警列表]           │
+│ ─────────────────────────────── │
+│ 🔍 Search sites...              │
+│ ─────────────────────────────── │
+│ 🏢 San Jose Campus              │
+│    Campus · 98% · 12 devices    │
+│ ─────────────────────────────── │
+│ 🏢 Frankfurt Data Center        │
+│    DataCenter · 100% · 42 devs  │
+│ ─────────────────────────────── │
+│ 🏢 Shanghai Branch              │
+│    Campus · 92% · 8 devices     │
+│ ─────────────────────────────── │
+│ 🏢 London Optical Transport     │
+│    Optical · 95% · 6 devices    │
+└─────────────────────────────────┘</code></pre>
+
+<h4>2.8.5 交互说明</h4>
+
+<ul>
+<li>当用户进入拓扑页面时，系统应默认在左侧抽屉显示 Global Overview</li>
+<li>当用户清除所有选中状态时（点击画布空白区域、点击返回按钮），系统应在左侧抽屉显示 Global Overview</li>
+<li>当用户在搜索框输入关键词时，系统应实时过滤站点列表（匹配站点名称或位置）</li>
+<li>当用户点击站点列表中的某个站点时，系统应在画布上高亮该站点卡片，并切换到该站点的邻居关系视图（TOPO-005）</li>
+<li>当用户切换到"站点列表" Tab 时，系统应显示可搜索的站点列表</li>
+<li>当用户切换到"告警列表" Tab 时，系统应显示活跃告警列表（按严重程度排序：critical &gt; major &gt; minor &gt; warning &gt; info）</li>
+<li>全局健康度图标应根据评分着色：≥90 绿色、70~89 橙色、&lt;70 红色</li>
+</ul>
+
+<h4>2.8.6 列表字段</h4>
+
+<p><strong>全局健康度字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th><th>图标</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>dcHealth</td><td>DataCenter 平均健康度</td><td>🏢 Server 图标</td></tr>
+<tr><td>2</td><td>campusHealth</td><td>Campus 平均健康度</td><td>🏫 Globe 图标</td></tr>
+<tr><td>3</td><td>opticalHealth</td><td>Optical 平均健康度</td><td>🔗 Layers 图标</td></tr>
+</tbody>
+</table>
+
+<p><strong>关键指标字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>siteCount</td><td>站点总数</td></tr>
+<tr><td>2</td><td>siteTypeDistribution</td><td>站点类型分布（DC/Campus/Optical 各自数量和占比进度条）</td></tr>
+<tr><td>3</td><td>deviceCount</td><td>设备总数</td></tr>
+</tbody>
+</table>
+
+<p><strong>站点列表 Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>name</td><td>Site.name</td><td>站点名称</td></tr>
+<tr><td>2</td><td>siteType</td><td>Site.siteType</td><td>站点类型</td></tr>
+<tr><td>3</td><td>health</td><td>Site.health</td><td>健康度百分比</td></tr>
+<tr><td>4</td><td>deviceCount</td><td>Site.deviceCount</td><td>设备数量</td></tr>
+</tbody>
+</table>
+
+<p><strong>告警列表 Tab 字段：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>字段</th><th>数据来源</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>severity</td><td>Alarm.severity</td><td>告警级别图标（🔴🟠🟡⚪）</td></tr>
+<tr><td>2</td><td>message</td><td>Alarm.message</td><td>告警消息</td></tr>
+<tr><td>3</td><td>source</td><td>Alarm.source</td><td>告警来源</td></tr>
+<tr><td>4</td><td>time</td><td>Alarm.time</td><td>告警时间</td></tr>
+</tbody>
+</table>
+
+<h4>2.8.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>站点列表为空</td><td>"No sites available"</td><td>Tab 内居中文字</td></tr>
+<tr><td>搜索无结果</td><td>"No sites match your search"</td><td>Tab 内居中文字</td></tr>
+<tr><td>告警列表为空</td><td>"No active events"</td><td>Tab 内居中文字</td></tr>
+<tr><td>某类型站点不存在</td><td>该类型健康度显示 "N/A"</td><td>数值占位</td></tr>
+</tbody>
+</table>
+
+<h4>2.8.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>MOCK_SITES 数据为空</td><td>所有指标显示 0 或 N/A</td><td>空面板</td></tr>
+<tr><td>健康度计算异常（除零）</td><td>显示 "N/A"</td><td>健康度显示 N/A</td></tr>
+<tr><td>MOCK_ALARMS 数据为空</td><td>告警 Tab 显示空列表</td><td>"No active events"</td></tr>
+<tr><td>搜索输入特殊字符</td><td>转义处理，正常搜索</td><td>无异常</td></tr>
+</tbody>
+</table>
+
+<h4>2.8.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>查看全局概览（所有站点）</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>查看全局概览（仅授权站点）</td><td>健康度和指标仅计算授权站点</td></tr>
+<tr><td>Viewer</td><td>查看全局概览</td><td>只读</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制。</blockquote>
+
+<h4>2.8.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>数据约束：</strong> 全局健康度基于 <code>Site.health</code> 字段计算，当前为 Mock 固定值</li>
+<li><strong>搜索约束：</strong> 站点搜索为前端本地过滤（匹配 <code>name</code> 和 <code>location</code> 字段），不支持模糊搜索</li>
+<li><strong>排序约束：</strong> 告警列表按严重程度排序（critical &gt; major &gt; minor &gt; warning &gt; info），同级别按时间倒序</li>
+<li><strong>刷新约束：</strong> 全局概览数据在页面加载时计算一次，不支持自动刷新（需手动点击工具栏刷新按钮）</li>
+<li><strong>进度条约束：</strong> 站点类型分布进度条为静态渲染，不支持动画</li>
+</ul>
+
+<h4>2.8.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>全局概览加载</td><td>≤ 100ms</td></tr>
+<tr><td>站点搜索过滤</td><td>≤ 50ms</td></tr>
+<tr><td>告警列表渲染</td><td>≤ 100ms</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h3>2.9 画布交互工具栏 (TOPO-009)</h3>
+
+<h4>2.9.1 功能说明</h4>
+
+<p><strong>功能描述：</strong> 画布左上角提供一组交互工具栏按钮，用于控制画布的缩放、平移、节点操作等。工具栏包含以下按钮（从上到下排列）：</p>
+
+<ul>
+<li><strong>Interact Tool（交互工具）：</strong> 切换交互模式，启用后可拖拽 Site 卡片调整位置</li>
+<li><strong>Expand/Collapse All（展开/折叠全部）：</strong> 一键展开或折叠所有 Site 卡片</li>
+<li><strong>Fit View（自适应视图）：</strong> 将所有节点缩放至当前视口可见范围</li>
+<li><strong>Zoom In（放大）：</strong> 以画布中心为基准放大视图（步长 20%）</li>
+<li><strong>Zoom Out（缩小）：</strong> 以画布中心为基准缩小视图（步长 20%）</li>
+<li><strong>Refresh（刷新）：</strong> 重置所有状态（缩放、平移、选中、展开），恢复初始视图</li>
+<li><strong>Draw Mode（绘制模式）：</strong> 切换绘制模式（当前版本为占位功能，后续支持手动绘制链路）</li>
+<li><strong>Export SVG（导出）：</strong> 将当前画布导出为 SVG 文件</li>
+</ul>
+
+<p><strong>触发条件：</strong> 用户点击工具栏中的任意按钮。</p>
+
+<p><strong>处理逻辑：</strong></p>
+<ul>
+<li>工具栏渲染为垂直排列的按钮组，固定在画布左上角</li>
+<li>每个按钮使用 Lucide React 图标</li>
+<li>按钮点击后执行对应操作，部分按钮有 toggle 状态（Interact Tool、Draw Mode）</li>
+<li>缩放范围限制在 20%~500%</li>
+</ul>
+
+<p><strong>输出结果：</strong> 画布状态根据用户操作更新。</p>
+
+<h4>2.9.2 竞品功能设计及流程说明</h4>
+
+<p><strong>（一）设计理念描述</strong></p>
+
+<p>参考 Figma / draw.io 的画布工具栏设计：</p>
+<ul>
+<li>工具栏固定在画布边缘，不随画布缩放/平移移动</li>
+<li>按钮以图标形式展示，hover 显示 tooltip</li>
+<li>常用操作（缩放、平移）放在显眼位置</li>
+</ul>
+
+<p><strong>（二）业务实现流程</strong></p>
+
+<pre><code>用户点击工具栏按钮
+  ↓
+系统识别按钮类型
+  ↓
+执行对应操作：
+  - Interact Tool → 切换 interactMode 状态
+  - Expand/Collapse All → 展开或折叠所有 Site
+  - Fit View → 计算最佳缩放比例和偏移量
+  - Zoom In/Out → 调整 zoom 值
+  - Refresh → 重置所有状态
+  - Draw Mode → 切换 drawMode 状态
+  - Export SVG → 生成并下载 SVG 文件</code></pre>
+
+<h4>2.9.3 功能业务流程</h4>
+
+<pre><code>Interact Tool 流程：
+  点击按钮 → interactMode = !interactMode
+    ↓
+  interactMode=true: Site 卡片可拖拽
+  interactMode=false: Site 卡片不可拖拽（默认）
+
+Expand/Collapse All 流程：
+  点击按钮
+    ↓
+  检查当前是否有 Site 展开：
+    有展开 → 折叠所有（expandedSites.clear()）
+    无展开 → 展开所有（expandedSites = new Set(allSiteIds)）
+
+Fit View 流程：
+  点击按钮
+    ↓
+  计算所有 Site 卡片的边界框（minX, minY, maxX, maxY）
+    ↓
+  计算最佳缩放比例 = min(viewportWidth / boundingWidth, viewportHeight / boundingHeight)
+    ↓
+  计算居中偏移量
+    ↓
+  设置 zoom 和 panOffset
+
+Zoom In/Out 流程：
+  点击 Zoom In → zoom = min(zoom + 0.2, 5.0)
+  点击 Zoom Out → zoom = max(zoom - 0.2, 0.2)
+
+Refresh 流程：
+  点击按钮
+    ↓
+  重置所有状态：
+    zoom = 1.0
+    panOffset = { x: 0, y: 0 }
+    expandedSites.clear()
+    selectedDeviceId = null
+    selectedLink = null
+    selectedSiteNeighborId = null
+    selectedInterSiteLink = null
+    interactMode = false
+    drawMode = false
+
+Export SVG 流程：
+  点击按钮
+    ↓
+  获取 SVG 元素的 outerHTML
+    ↓
+  创建 Blob 对象（type: 'image/svg+xml'）
+    ↓
+  创建下载链接并触发下载
+    ↓
+  文件名格式：topology-export-{timestamp}.svg</code></pre>
+
+<h4>2.9.4 原型界面</h4>
+
+<pre><code>┌──────┐
+│  🖱️  │  ← Interact Tool (toggle)
+├──────┤
+│  ⬜  │  ← Expand/Collapse All
+├──────┤
+│  ⊞  │  ← Fit View
+├──────┤
+│  🔍+ │  ← Zoom In
+├──────┤
+│  🔍- │  ← Zoom Out
+├──────┤
+│  🔄  │  ← Refresh
+├──────┤
+│  ✏️  │  ← Draw Mode (toggle, 占位)
+├──────┤
+│  📥  │  ← Export SVG
+└──────┘</code></pre>
+
+<p>工具栏位置：画布左上角，距离顶部 16px，距离左侧 16px（在抽屉面板右侧）。</p>
+
+<h4>2.9.5 交互说明</h4>
+
+<ul>
+<li>当用户点击 Interact Tool 按钮时，系统应切换交互模式（按钮高亮表示激活状态），激活后 Site 卡片可拖拽</li>
+<li>当用户点击 Expand/Collapse All 按钮时，系统应展开或折叠所有 Site 卡片（智能判断：有展开则全部折叠，无展开则全部展开）</li>
+<li>当用户点击 Fit View 按钮时，系统应将所有节点缩放至当前视口可见范围，居中显示</li>
+<li>当用户点击 Zoom In 按钮时，系统应以画布中心为基准放大视图（步长 20%，最大 500%）</li>
+<li>当用户点击 Zoom Out 按钮时，系统应以画布中心为基准缩小视图（步长 20%，最小 20%）</li>
+<li>当用户点击 Refresh 按钮时，系统应重置所有状态（缩放、平移、选中、展开），恢复初始视图</li>
+<li>当用户点击 Draw Mode 按钮时，系统应切换绘制模式（当前版本为占位功能，按钮可点击但无实际效果）</li>
+<li>当用户点击 Export SVG 按钮时，系统应将当前画布导出为 SVG 文件并触发浏览器下载</li>
+<li>工具栏按钮 hover 时应显示 tooltip（按钮功能名称）</li>
+<li>Toggle 类按钮（Interact Tool、Draw Mode）激活时应显示高亮背景色</li>
+</ul>
+
+<h4>2.9.6 列表字段</h4>
+
+<p><strong>工具栏按钮列表：</strong></p>
+
+<table>
+<thead><tr><th>显示顺序</th><th>按钮名称</th><th>图标（Lucide）</th><th>类型</th><th>快捷键（后续）</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>Interact Tool</td><td><code>MousePointer</code></td><td>Toggle</td><td>V</td></tr>
+<tr><td>2</td><td>Expand/Collapse All</td><td><code>ChevronDown</code> / <code>Minus</code></td><td>Action</td><td>E</td></tr>
+<tr><td>3</td><td>Fit View</td><td><code>Maximize</code></td><td>Action</td><td>F</td></tr>
+<tr><td>4</td><td>Zoom In</td><td><code>Plus</code></td><td>Action</td><td>Ctrl + =</td></tr>
+<tr><td>5</td><td>Zoom Out</td><td><code>Minus</code></td><td>Action</td><td>Ctrl + -</td></tr>
+<tr><td>6</td><td>Refresh</td><td><code>RotateCcw</code></td><td>Action</td><td>R</td></tr>
+<tr><td>7</td><td>Draw Mode</td><td><code>Pencil</code></td><td>Toggle</td><td>D</td></tr>
+<tr><td>8</td><td>Export SVG</td><td><code>Download</code></td><td>Action</td><td>Ctrl + S</td></tr>
+</tbody>
+</table>
+
+<h4>2.9.7 提示说明</h4>
+
+<table>
+<thead><tr><th>场景</th><th>提示内容</th><th>类型</th></tr></thead>
+<tbody>
+<tr><td>Hover Interact Tool</td><td>"Toggle interact mode"</td><td>Tooltip</td></tr>
+<tr><td>Hover Expand/Collapse</td><td>"Expand all / Collapse all"</td><td>Tooltip</td></tr>
+<tr><td>Hover Fit View</td><td>"Fit to viewport"</td><td>Tooltip</td></tr>
+<tr><td>Hover Zoom In</td><td>"Zoom in"</td><td>Tooltip</td></tr>
+<tr><td>Hover Zoom Out</td><td>"Zoom out"</td><td>Tooltip</td></tr>
+<tr><td>Hover Refresh</td><td>"Reset view"</td><td>Tooltip</td></tr>
+<tr><td>Hover Draw Mode</td><td>"Draw mode (coming soon)"</td><td>Tooltip</td></tr>
+<tr><td>Hover Export</td><td>"Export as SVG"</td><td>Tooltip</td></tr>
+<tr><td>缩放达到上限</td><td>Zoom In 按钮变灰（disabled）</td><td>按钮禁用</td></tr>
+<tr><td>缩放达到下限</td><td>Zoom Out 按钮变灰（disabled）</td><td>按钮禁用</td></tr>
+</tbody>
+</table>
+
+<h4>2.9.8 异常与容错处理</h4>
+
+<table>
+<thead><tr><th>异常场景</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>Fit View 计算异常（无节点）</td><td>保持当前缩放和偏移</td><td>无变化</td></tr>
+<tr><td>Export SVG 失败（浏览器限制）</td><td>显示 console.error</td><td>无下载文件</td></tr>
+<tr><td>缩放超出范围</td><td>限制在 20%~500%</td><td>按钮禁用</td></tr>
+<tr><td>Refresh 后数据加载失败</td><td>保持空白画布</td><td>画布空白</td></tr>
+</tbody>
+</table>
+
+<h4>2.9.9 权限控制要求</h4>
+
+<table>
+<thead><tr><th>角色</th><th>权限</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>SuperAdmin</td><td>所有工具栏功能</td><td>完整访问</td></tr>
+<tr><td>SiteAdmin</td><td>所有工具栏功能</td><td>完整访问</td></tr>
+<tr><td>Viewer</td><td>缩放、平移、Fit View</td><td>不可展开/折叠、不可拖拽</td></tr>
+</tbody>
+</table>
+
+<blockquote>当前版本（V1.0）无权限控制，所有用户可使用所有工具栏功能。</blockquote>
+
+<h4>2.9.10 功能约束与边界</h4>
+
+<ul>
+<li><strong>位置约束：</strong> 工具栏固定在画布左上角，不随画布缩放/平移移动</li>
+<li><strong>Draw Mode 约束：</strong> 当前版本为占位功能，按钮可点击但无实际绘制效果，后续版本实现</li>
+<li><strong>Export 约束：</strong> 导出为 SVG 格式，不支持 PNG/PDF 导出（后续版本支持）</li>
+<li><strong>快捷键约束：</strong> 当前版本不支持键盘快捷键，后续版本实现</li>
+<li><strong>缩放约束：</strong> 缩放范围 20%~500%，步长 20%（滚轮缩放步长 10%）</li>
+<li><strong>Tooltip 约束：</strong> 当前版本使用 HTML <code>title</code> 属性实现 tooltip，后续迁移为自定义 Tooltip 组件</li>
+</ul>
+
+<h4>2.9.11 非功能需求</h4>
+
+<table>
+<thead><tr><th>项目</th><th>指标</th></tr></thead>
+<tbody>
+<tr><td>工具栏操作响应</td><td>≤ 100ms</td></tr>
+<tr><td>SVG 导出</td><td>≤ 3000ms</td></tr>
+<tr><td>缩放/平移帧率</td><td>≥ 60fps</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>3. 需求原理说明</h2>
+
+<h3>3.1 功能实现原理</h3>
+
+<p>前端采用 React 19 + TypeScript 5.8 + SVG 原生渲染实现拓扑画布：</p>
+
+<p><strong>画布渲染：</strong></p>
+<ul>
+<li>使用 SVG <code>&lt;g&gt;</code> 元素组合 Site 卡片、设备节点、链路连线</li>
+<li>Site 卡片折叠态使用 <code>&lt;foreignObject&gt;</code> 嵌入 HTML 内容</li>
+<li>Site 卡片展开态使用 SVG 原生元素（<code>&lt;rect&gt;</code>, <code>&lt;circle&gt;</code>, <code>&lt;text&gt;</code>, <code>&lt;line&gt;</code>）</li>
+<li>Site 间连线使用 <code>&lt;line&gt;</code> 元素，跨站设备链路使用 <code>&lt;path&gt;</code> Bezier 曲线</li>
+</ul>
+
+<p><strong>布局算法：</strong></p>
+<ul>
+<li>Site 卡片使用 2×2 网格布局（<code>gridCols=2</code>，<code>spacingX=600</code>, <code>spacingY=500</code>）</li>
+<li>站内设备按角色分层排列（4 层：Core/Spine → Aggregation/Leaf → Access/Border → AP/Camera/OTN）</li>
+<li>每层设备水平均匀分布，垂直间距固定</li>
+</ul>
+
+<p><strong>状态管理：</strong></p>
+<ul>
+<li>使用 React <code>useState</code> 管理所有交互状态</li>
+<li>状态优先级链（决定左侧抽屉内容）：<code>selectedLink</code> → <code>selectedDevice</code> → <code>selectedSite</code>（展开态） → <code>selectedInterSiteLink</code> → <code>selectedSiteNeighbor</code> → <code>GlobalOverview</code></li>
+</ul>
+
+<p><strong>抽屉面板：</strong></p>
+<ul>
+<li>条件渲染链：根据当前选中状态渲染对应的详情组件</li>
+<li>面板宽度固定 200px，支持折叠/展开</li>
+</ul>
+
+<h3>3.2 技术选型对比</h3>
+
+<table>
+<thead><tr><th>方案</th><th>选型</th><th>备选方案</th><th>选择理由</th></tr></thead>
+<tbody>
+<tr><td>画布渲染</td><td>SVG 原生</td><td>Canvas 2D / WebGL</td><td>轻量、无额外依赖、支持 CSS 样式、DOM 事件绑定简单、可导出 SVG</td></tr>
+<tr><td>图表库</td><td>未使用</td><td>AntV G6 / D3.js / Cytoscape.js</td><td>当前 Mock 阶段 SVG 足够，后续大规模场景迁移 G6</td></tr>
+<tr><td>3D 地球</td><td>SVG + 数学投影</td><td>Three.js / CesiumJS / Mapbox GL</td><td>纯前端实现，无 WebGL 依赖，轻量</td></tr>
+<tr><td>UI 组件</td><td>Lucide React Icons + Tailwind CSS</td><td>Ant Design / Material UI</td><td>轻量图标库 + 原子化 CSS，无重量级 UI 框架依赖</td></tr>
+<tr><td>状态管理</td><td>React useState</td><td>Zustand / Redux / MobX</td><td>当前状态复杂度可控，后续迁移 Zustand</td></tr>
+</tbody>
+</table>
+
+<h3>3.3 规格类约束条件</h3>
+
+<table>
+<thead><tr><th>约束类别</th><th>约束内容</th><th>当前值</th><th>目标值（后续）</th></tr></thead>
+<tbody>
+<tr><td>Site 数量</td><td>最大支持 Site 数</td><td>≤20</td><td>≤200</td></tr>
+<tr><td>Device/Site</td><td>单 Site 最大设备数</td><td>≤50</td><td>≤500</td></tr>
+<tr><td>链路数量</td><td>最大链路数</td><td>≤100</td><td>≤5000</td></tr>
+<tr><td>画布缩放</td><td>缩放范围</td><td>20%~500%</td><td>10%~1000%</td></tr>
+<tr><td>抽屉宽度</td><td>面板宽度</td><td>200px</td><td>200~400px（可调）</td></tr>
+<tr><td>SVG 导出</td><td>最大导出尺寸</td><td>无限制</td><td>≤10000×10000px</td></tr>
+</tbody>
+</table>
+
+<h3>3.4 外部依赖说明</h3>
+
+<h4>3.4.1 三方件依赖</h4>
+
+<table>
+<thead><tr><th>类别</th><th>包名</th><th>版本约束</th><th>用途</th></tr></thead>
+<tbody>
+<tr><td>框架</td><td>react</td><td>^19.2.3</td><td>UI 框架</td></tr>
+<tr><td>框架</td><td>react-dom</td><td>^19.2.3</td><td>DOM 渲染</td></tr>
+<tr><td>图标</td><td>lucide-react</td><td>^0.562.0</td><td>图标组件库（Server, Globe, Wifi, Video, Cpu 等）</td></tr>
+<tr><td>构建</td><td>vite</td><td>^6.2.0</td><td>开发服务器 + 构建工具</td></tr>
+<tr><td>类型</td><td>typescript</td><td>~5.8.2</td><td>类型检查</td></tr>
+<tr><td>样式</td><td>tailwindcss</td><td>CDN</td><td>原子化 CSS（通过 CDN 引入）</td></tr>
+</tbody>
+</table>
+
+<h4>3.4.2 内部依赖</h4>
+
+<table>
+<thead><tr><th>模块</th><th>文件</th><th>依赖说明</th></tr></thead>
+<tbody>
+<tr><td>类型定义</td><td>types.ts</td><td>Site, Device, Alarm, Client 等 TypeScript 接口</td></tr>
+<tr><td>Mock 数据</td><td>constants.tsx</td><td>MOCK_SITES, MOCK_DEVICES, MOCK_ALARMS, SITE_NEIGHBOR_LINKS</td></tr>
+<tr><td>主应用</td><td>App.tsx</td><td>路由和页面切换</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>4. 总体技术方案</h2>
+
+<h3>4.1 系统定位与边界</h3>
+
+<p>融合控制器拓扑视图是 AmpCon Fusion Controller 平台的核心可视化模块，负责：</p>
+
+<ul>
+<li><strong>上游：</strong> 接收后端 REST API 提供的 Site / Device / Link / Alarm 数据（当前使用 Mock 数据）</li>
+<li><strong>下游：</strong> 无直接下游，纯展示层；用户可从拓扑视图跳转到站点管理、设备管理等模块</li>
+<li><strong>边界：</strong>
+  <ul>
+  <li>✅ 负责：拓扑可视化、交互操作、状态管理、数据展示</li>
+  <li>❌ 不负责：数据采集、告警处理、设备配置、网络发现、链路监控</li>
+  </ul>
+</li>
+</ul>
+
+<h3>4.2 总体架构</h3>
+
+<pre><code>┌──────────────────────────────────────────────────────────────┐
+│                        前端 SPA (React 19)                    │
+│                                                               │
+│  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐  │
+│  │  SiteMap.tsx  │  │  Overview    │  │  Detail Views      │  │
+│  │  (SVG 画布)   │  │  Drawer.tsx  │  │  (Device/Link/     │  │
+│  │              │  │  (左侧抽屉)   │  │   Site/Global)     │  │
+│  └──────┬───────┘  └──────┬───────┘  └────────┬───────────┘  │
+│         │                 │                    │              │
+│  ┌──────┴─────────────────┴────────────────────┴───────────┐  │
+│  │              React State (useState)                      │  │
+│  │  zoom, panOffset, expandedSites, selectedDeviceId,      │  │
+│  │  selectedLink, selectedSiteNeighborId,                   │  │
+│  │  selectedInterSiteLink, interactMode, drawMode           │  │
+│  └──────────────────────────┬──────────────────────────────┘  │
+│                             │                                 │
+│  ┌──────────────────────────┴──────────────────────────────┐  │
+│  │              Mock Data Layer (constants.tsx)              │  │
+│  │  MOCK_SITES, MOCK_DEVICES, MOCK_ALARMS,                 │  │
+│  │  FABRIC_LINKS, SITE_INTERNAL_LINKS,                     │  │
+│  │  INTER_SITE_DEVICE_LINKS, SITE_NEIGHBOR_LINKS           │  │
+│  │  → 后续替换为 REST API + React Query / SWR              │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                               │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │              Type Definitions (types.ts)                  │  │
+│  │  Site, Device, Alarm, FabricLink, SiteNeighborLink,      │  │
+│  │  DeviceConnection, PluginMetadata                        │  │
+│  └──────────────────────────────────────────────────────────┘  │
+└──────────────────────────────────────────────────────────────┘</code></pre>
+
+<h3>4.3 关键技术选型</h3>
+
+<table>
+<thead><tr><th>技术领域</th><th>选型</th><th>版本</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>前端框架</td><td>React</td><td>19.2.3</td><td>组件化开发，Hooks API</td></tr>
+<tr><td>类型系统</td><td>TypeScript</td><td>5.8.2</td><td>静态类型检查</td></tr>
+<tr><td>构建工具</td><td>Vite</td><td>6.2.0</td><td>快速 HMR，ESBuild 预构建</td></tr>
+<tr><td>样式方案</td><td>Tailwind CSS</td><td>CDN</td><td>原子化 CSS，无构建步骤</td></tr>
+<tr><td>图标库</td><td>Lucide React</td><td>0.562.0</td><td>轻量 SVG 图标组件</td></tr>
+<tr><td>画布渲染</td><td>SVG 原生</td><td>-</td><td>后续迁移 AntV G6</td></tr>
+<tr><td>状态管理</td><td>React useState</td><td>-</td><td>后续迁移 Zustand</td></tr>
+<tr><td>数据获取</td><td>Mock 数据</td><td>-</td><td>后续迁移 REST API + React Query</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>5. 模块设计概述</h2>
+
+<h3>5.1 模块划分</h3>
+
+<table>
+<thead><tr><th>模块</th><th>文件</th><th>职责</th><th>代码行数（估）</th></tr></thead>
+<tbody>
+<tr><td>拓扑画布</td><td>SiteMap.tsx</td><td>全局拓扑渲染、Site 卡片（折叠/展开）、链路连线、画布交互（缩放/平移/拖拽）、工具栏</td><td>~1500 行</td></tr>
+<tr><td>抽屉面板</td><td>OverviewDrawer.tsx</td><td>左侧面板容器、视图切换逻辑、GlobalOverview、DeviceDetailView、LinkDetailView、SiteInterView</td><td>~1200 行</td></tr>
+<tr><td>数据层</td><td>constants.tsx</td><td>Mock 数据定义（MOCK_SITES, MOCK_DEVICES, MOCK_ALARMS, SITE_NEIGHBOR_LINKS, FABRIC_LINKS 等）</td><td>~500 行</td></tr>
+<tr><td>类型定义</td><td>types.ts</td><td>TypeScript 接口定义（Site, Device, Alarm, Client, PluginMetadata 等）</td><td>~100 行</td></tr>
+<tr><td>设备详情抽屉</td><td>DeviceDetailDrawer.tsx</td><td>独立设备详情组件（从其他页面复用）</td><td>~200 行</td></tr>
+</tbody>
+</table>
+
+<h3>5.2 模块间关系</h3>
+
+<pre><code>SiteMap.tsx (画布主组件)
+  │
+  ├── NetworkView (2D SVG 拓扑)
+  │   ├── CollapsedSiteContent (折叠态 Site 卡片)
+  │   │   └── 显示: name, siteType, health, deviceCount, onlineCount, alertCount
+  │   ├── ExpandedSiteContent (展开态 Site 卡片)
+  │   │   ├── Site Header (name, siteType, health)
+  │   │   ├── Device Nodes (按角色分层排列)
+  │   │   └── Internal Links (站内设备链路)
+  │   ├── FabricLinks (Site 间连线)
+  │   │   └── 显示: latency 标签, quality 颜色编码
+  │   ├── CrossSiteDeviceLinks (跨站设备链路曲线)
+  │   │   └── 显示: bandwidth 标签, status 颜色
+  │   └── CanvasToolbar (画布工具栏)
+  │       └── 8 个工具按钮
+  │
+  ├── GlobeView (3D 地球视图)
+  │   └── SVG + 数学投影实现
+  │
+  └── OverviewDrawer (左侧抽屉面板)
+      ├── GlobalOverview (全局概览 - 默认视图)
+      │   ├── Global Health (DC/Campus/Optical 健康度)
+      │   ├── Key Metrics (站点数、类型分布、设备数)
+      │   ├── Sites Tab (可搜索站点列表)
+      │   └── Alarms Tab (活跃告警列表)
+      ├── DeviceDetailView (设备详情 - TOPO-003)
+      │   ├── Device Info (8 个基本信息字段)
+      │   ├── Neighbors Tab (设备邻居 + View Connectivity)
+      │   └── Alarms Tab (设备告警)
+      ├── LinkDetailView (链路详情 - TOPO-004)
+      │   ├── Connection Info (DeviceA ↕ DeviceB)
+      │   ├── Link Metrics (5 个指标)
+      │   ├── Members Tab (成员链路)
+      │   └── Alarms Tab (链路告警)
+      └── SiteInterView (站点邻居/链路关系 - TOPO-005/006)
+          ├── Header (Site or Selected Link)
+          ├── Subtitle (Current Site / SiteA ⟷ SiteB)
+          ├── Neighbors Tab (邻居站点列表)
+          └── Members Tab (跨站设备对列表)</code></pre>
+
+<hr>
+
+<h2>6. 性能与容量方案</h2>
+
+<h3>6.1 前端页面加载响应时间目标</h3>
+
+<table>
+<thead><tr><th>页面/操作</th><th>指标要求</th><th>当前实测</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>拓扑页面首次加载</td><td>≤ 2000ms</td><td>~800ms</td><td>Mock 数据无网络延迟</td></tr>
+<tr><td>Site 卡片展开</td><td>≤ 200ms</td><td>~50ms</td><td>本地状态切换</td></tr>
+<tr><td>Site 卡片折叠</td><td>≤ 200ms</td><td>~30ms</td><td>本地状态切换</td></tr>
+<tr><td>抽屉面板切换</td><td>≤ 100ms</td><td>~20ms</td><td>条件渲染</td></tr>
+<tr><td>画布缩放/平移</td><td>≤ 16ms (60fps)</td><td>~8ms</td><td>SVG transform</td></tr>
+<tr><td>工具栏操作响应</td><td>≤ 100ms</td><td>~10ms</td><td>状态更新</td></tr>
+<tr><td>SVG 导出</td><td>≤ 3000ms</td><td>~500ms</td><td>DOM 序列化</td></tr>
+<tr><td>站点搜索过滤</td><td>≤ 50ms</td><td>~5ms</td><td>前端本地过滤</td></tr>
+</tbody>
+</table>
+
+<h3>6.2 容量规划</h3>
+
+<table>
+<thead><tr><th>维度</th><th>当前支持</th><th>目标支持（后续）</th><th>瓶颈分析</th></tr></thead>
+<tbody>
+<tr><td>Site 数量</td><td>≤20</td><td>≤200</td><td>SVG DOM 节点数，需迁移 Canvas/WebGL</td></tr>
+<tr><td>Device/Site</td><td>≤50</td><td>≤500</td><td>展开态卡片内节点数，需虚拟化渲染</td></tr>
+<tr><td>总设备数</td><td>≤200</td><td>≤10000</td><td>内存占用，需分页加载</td></tr>
+<tr><td>链路数量</td><td>≤100</td><td>≤5000</td><td>SVG path 渲染性能</td></tr>
+<tr><td>告警数量</td><td>≤500</td><td>≤10000</td><td>列表渲染，需虚拟滚动</td></tr>
+<tr><td>并发用户</td><td>无限制（纯前端）</td><td>无限制</td><td>无服务端状态</td></tr>
+</tbody>
+</table>
+
+<h3>6.3 性能优化策略（后续版本）</h3>
+
+<table>
+<thead><tr><th>优化方向</th><th>策略</th><th>预期收益</th></tr></thead>
+<tbody>
+<tr><td>画布渲染</td><td>迁移至 AntV G6（Canvas 渲染）</td><td>支持 &gt;1000 节点</td></tr>
+<tr><td>大列表</td><td>虚拟滚动（react-window）</td><td>告警/设备列表 &gt;1000 条</td></tr>
+<tr><td>数据加载</td><td>分页 + 懒加载</td><td>减少首屏数据量</td></tr>
+<tr><td>状态管理</td><td>迁移至 Zustand</td><td>减少不必要的重渲染</td></tr>
+<tr><td>缓存</td><td>React Query 缓存</td><td>减少重复请求</td></tr>
+<tr><td>布局计算</td><td>Web Worker 离线计算</td><td>避免主线程阻塞</td></tr>
+</tbody>
+</table>
+
+<hr>
+
+<h2>7. 变更记录</h2>
+
+<table>
+<thead><tr><th>版本</th><th>日期</th><th>变更内容</th><th>作者</th></tr></thead>
+<tbody>
+<tr><td>v1.0</td><td>2026-04-23</td><td>初始版本，覆盖全局拓扑、站点下钻、设备/链路详情、站点邻居/链路成员视图</td><td>AmpCon Product Team</td></tr>
+<tr><td>v1.0</td><td>2026-04-24</td><td>补全 TOPO-002 ~ TOPO-009 功能需求详述</td><td>AmpCon Product Team</td></tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>

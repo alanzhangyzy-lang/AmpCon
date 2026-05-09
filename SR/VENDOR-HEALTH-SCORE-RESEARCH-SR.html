@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>友商网络健康度评分方案深度调研报告</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; padding: 24px; background: #fff; color: #1f2329; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #3370ff; }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; }
+  p, li { font-size: 14px; line-height: 1.8; }
+  blockquote { border-left: 3px solid #3370ff; padding: 8px 16px; margin: 12px 0; background: #f7f8fa; color: #646a73; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 13px; }
+  th { background: #f0f2f5; font-weight: 600; text-align: center; padding: 8px 10px; border: 1px solid #dee0e3; white-space: nowrap; }
+  td { padding: 6px 10px; border: 1px solid #dee0e3; vertical-align: middle; }
+  .tag-yes { display: inline-block; background: #d4f5e2; color: #1a7f37; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-no { display: inline-block; background: #f5f5f5; color: #8f959e; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-partial { display: inline-block; background: #fff3e0; color: #b86e00; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .section-tag { display: inline-block; background: #e8f3ff; color: #3370ff; padding: 2px 10px; border-radius: 4px; font-size: 13px; font-weight: 600; margin-right: 6px; }
+  .legend { margin: 16px 0; padding: 12px 16px; background: #f7f8fa; border-radius: 8px; font-size: 13px; }
+  .legend span { margin-right: 20px; }
+  .highlight-row td { background: #fffbe6; }
+  .strong-cell { font-weight: 600; background: #fafbfc; white-space: nowrap; }
+  ul { padding-left: 20px; }
+  ol { padding-left: 20px; }
+  a { color: #3370ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .meta { color: #646a73; font-size: 13px; margin-bottom: 24px; }
+  code { background: #f5f5f5; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', 'Monaco', monospace; font-size: 13px; }
+  pre { background: #f7f8fa; padding: 12px 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+  .summary-box { background: #e8f3ff; border: 1px solid #3370ff; border-radius: 8px; padding: 16px; margin: 16px 0; }
+  .vendor-header { background: #3370ff; color: white; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>友商网络健康度评分方案深度调研报告</h1>
+
+<div class="meta">
+<p><strong>文档编号：</strong>SR-AMPCON-VENDOR-HEALTH-001</p>
+<p><strong>版本：</strong>v1.0</p>
+<p><strong>作者：</strong>AmpCon Product Team</p>
+<p><strong>日期：</strong>2026-05-06</p>
+</div>
+
+<h2>1. 调研背景与目标</h2>
+
+<h3>1.1 背景</h3>
+<p>AmpCon 融合控制器管理三种网络场景（数据中心、园区、光传输），需要为每个 Site 提供 0-100 的健康度评分来反映网络整体运行状态。本报告深度调研业内主流厂商（Arista、Cisco、Juniper、华为、华三）在各场景的健康分数实现方案。</p>
+
+<h3>1.2 目标</h3>
+<p>输出两套方案：</p>
+<ul>
+<li><strong>方案 A（通用基础方案）</strong>：适用于三个场景的基础实现，快速交付 MVP</li>
+<li><strong>方案 B（演进专业方案）</strong>：深入对应业务场景，满足业内最新方案设计</li>
+</ul>
+
+<h3>1.3 调研范围</h3>
+
+<table>
+<tr>
+<th>厂商</th>
+<th>数据中心</th>
+<th>园区网络</th>
+<th>光传输</th>
+</tr>
+<tr>
+<td class="strong-cell">Arista</td>
+<td><span class="tag-yes">✅ CloudVision + CUE</span></td>
+<td><span class="tag-yes">✅ CloudVision CUE</span></td>
+<td><span class="tag-no">❌ 不涉及</span></td>
+</tr>
+<tr>
+<td class="strong-cell">Cisco</td>
+<td><span class="tag-yes">✅ Catalyst Center</span></td>
+<td><span class="tag-yes">✅ Catalyst Center</span></td>
+<td><span class="tag-no">❌ 不涉及</span></td>
+</tr>
+<tr>
+<td class="strong-cell">Juniper</td>
+<td><span class="tag-yes">✅ Data Center Assurance</span></td>
+<td><span class="tag-yes">✅ Mist AI</span></td>
+<td><span class="tag-no">❌ 不涉及</span></td>
+</tr>
+<tr>
+<td class="strong-cell">华为</td>
+<td><span class="tag-yes">✅ iMaster NCE-FabricInsight</span></td>
+<td><span class="tag-yes">✅ iMaster NCE-CampusInsight</span></td>
+<td><span class="tag-yes">✅ iMaster NCE-T</span></td>
+</tr>
+<tr>
+<td class="strong-cell">华三</td>
+<td><span class="tag-yes">✅ SeerAnalyzer-DC / AD-DC</span></td>
+<td><span class="tag-yes">✅ SeerAnalyzer-Campus / AD-Campus</span></td>
+<td><span class="tag-no">❌ 不涉及</span></td>
+</tr>
+</table>
+
+<h2>2. 厂商方案详细分析</h2>
+
+<h3>2.1 Arista CloudVision + CUE</h3>
+
+<h4>2.1.1 数据中心场景</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">合规性驱动 + SLA Dashboard 双模式</span></p>
+
+<p><strong>模式一：合规性检查模型</strong></p>
+<table>
+<tr>
+<th>检查维度</th>
+<th>检查内容</th>
+<th>权重</th>
+</tr>
+<tr>
+<td class="strong-cell">配置合规</td>
+<td>设备运行配置与设计配置的一致性（Config Diff）</td>
+<td>30%</td>
+</tr>
+<tr>
+<td class="strong-cell">镜像合规</td>
+<td>设备 EOS 版本是否符合目标版本</td>
+<td>20%</td>
+</tr>
+<tr>
+<td class="strong-cell">设备状态</td>
+<td>CPU/内存/温度/电源/风扇状态</td>
+<td>20%</td>
+</tr>
+<tr>
+<td class="strong-cell">接口状态</td>
+<td>端口 Up/Down、错误计数器、CRC</td>
+<td>15%</td>
+</tr>
+<tr>
+<td class="strong-cell">BGP/OSPF 邻居状态</td>
+<td>协议会话是否 Established</td>
+<td>10%</td>
+</tr>
+<tr>
+<td class="strong-cell">MLAG 状态</td>
+<td>双活链路聚合健康</td>
+<td>5%</td>
+</tr>
+</table>
+
+<p><strong>计算公式：</strong><code>健康度 = Pass 项数 / 总检查项数 × 100%</code></p>
+
+<p><strong>模式二：SLA Dashboard 模型</strong></p>
+<table>
+<tr>
+<th>维度</th>
+<th>指标</th>
+<th>阈值默认值</th>
+</tr>
+<tr>
+<td class="strong-cell">网络健康</td>
+<td>整体网络连通性</td>
+<td>Green ≥ 98.5%</td>
+</tr>
+<tr>
+<td class="strong-cell">设备健康</td>
+<td>设备在线率、资源利用率</td>
+<td>Orange ≥ 80%</td>
+</tr>
+<tr>
+<td class="strong-cell">应用健康</td>
+<td>应用可达性、响应时间</td>
+<td>Red < 80%</td>
+</tr>
+</table>
+
+<div class="summary-box">
+<p><strong>特色能力：</strong></p>
+<ul>
+<li><strong>动态基线（CV-CUE Baselines）</strong>：每 15 分钟自动计算基线，基于 mean + 2σ 的异常检测</li>
+<li><strong>FEED 异常监控</strong>：持续监控网络异常，自动分析异常原因，提供动态修复建议</li>
+<li><strong>AQL 高级查询语言</strong>：支持电源、风扇、温度、CPU、内存、磁盘、TCAM 等细粒度监控</li>
+</ul>
+</div>
+
+<h4>2.1.2 园区场景（Infrastructure Dashboard）</h4>
+
+<table>
+<tr>
+<th>指标</th>
+<th>阈值</th>
+<th>说明</th>
+</tr>
+<tr>
+<td class="strong-cell">AP CPU 利用率</td>
+<td>80%</td>
+<td>AP 健康度核心指标</td>
+</tr>
+<tr>
+<td class="strong-cell">AP 内存利用率</td>
+<td>80%</td>
+<td>内存健康检查</td>
+</tr>
+<tr>
+<td class="strong-cell">Crash/Reboot 计数</td>
+<td>24h 内统计</td>
+<td>稳定性指标</td>
+</tr>
+<tr>
+<td class="strong-cell">Low Power 状态</td>
+<td>功率不足检测</td>
+<td>供电健康</td>
+</tr>
+<tr>
+<td class="strong-cell">RF 噪声 / 信道使用率</td>
+<td>射频干扰 / 信道占用</td>
+<td>无线质量 / 容量指标</td>
+</tr>
+</table>
+
+<h3>2.2 Cisco Catalyst Center</h3>
+
+<h4>2.2.1 数据中心 + 园区场景（统一模型）</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">设备级评分 → 站点聚合模型</span></p>
+
+<p><strong>设备级评分（0-10 分）</strong>，每 5 分钟计算一次：</p>
+<table>
+<tr>
+<th>KPI</th>
+<th>权重</th>
+<th>阈值</th>
+<th>评分规则</th>
+</tr>
+<tr>
+<td class="strong-cell">可达性</td>
+<td>最高优先级</td>
+<td>ICMP/SNMP 可达</td>
+<td>不可达直接判定 Poor</td>
+</tr>
+<tr>
+<td class="strong-cell">CPU 利用率</td>
+<td>20%</td>
+<td>90%</td>
+<td>超阈值降分</td>
+</tr>
+<tr>
+<td class="strong-cell">内存利用率</td>
+<td>20%</td>
+<td>90%</td>
+<td>超阈值降分</td>
+</tr>
+<tr>
+<td class="strong-cell">链路错误率</td>
+<td>15%</td>
+<td>CRC/Input/Output Errors</td>
+<td>错误率影响评分</td>
+</tr>
+<tr>
+<td class="strong-cell">链路可用性</td>
+<td>25%</td>
+<td>接口 Up/Down</td>
+<td>Down 接口扣分</td>
+</tr>
+<tr>
+<td class="strong-cell">电源/风扇/温度状态</td>
+<td>20%</td>
+<td>硬件健康</td>
+<td>异常扣分</td>
+</tr>
+</table>
+
+<p><strong>设备分类标准</strong></p>
+<table>
+<tr>
+<th>状态</th>
+<th>分数区间</th>
+<th>颜色</th>
+<th>判定条件</th>
+</tr>
+<tr>
+<td class="strong-cell">Good</td>
+<td>8-10</td>
+<td style="color: #10b981;">绿色</td>
+<td>所有 KPI 正常</td>
+</tr>
+<tr>
+<td class="strong-cell">Fair</td>
+<td>4-7</td>
+<td style="color: #f59e0b;">琥珀色</td>
+<td>部分 KPI 超阈值</td>
+</tr>
+<tr>
+<td class="strong-cell">Poor</td>
+<td>0-3</td>
+<td style="color: #ef4444;">红色</td>
+<td>任一关键 KPI 严重异常</td>
+</tr>
+</table>
+
+<p><strong>站点健康度计算：</strong><code>站点健康度 = Good 设备数 / 总设备数 × 100%</code></p>
+
+<p><strong>Network Services 健康度</strong></p>
+<table>
+<tr>
+<th>服务</th>
+<th>权重</th>
+</tr>
+<tr>
+<td class="strong-cell">AAA 服务认证成功率</td>
+<td>40%</td>
+</tr>
+<tr>
+<td class="strong-cell">DHCP 服务分配成功率</td>
+<td>30%</td>
+</tr>
+<tr>
+<td class="strong-cell">DNS 服务解析成功率</td>
+<td>30%</td>
+</tr>
+</table>
+
+<h3>2.3 Juniper Mist + Data Center Assurance</h3>
+
+<h4>2.3.1 数据中心场景（Data Center Assurance）</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">SLE（Service Level Expectations）百分比模型</span></p>
+
+<p>Juniper Data Center Assurance 定义了 <strong>5 个核心 SLE 维度</strong>：</p>
+
+<p><strong>System Health SLE</strong></p>
+<table>
+<tr>
+<th>Classifier</th>
+<th>Sub-classifiers</th>
+<th>说明</th>
+</tr>
+<tr>
+<td class="strong-cell">Device Traffic</td>
+<td>—</td>
+<td>设备流量影响</td>
+</tr>
+<tr>
+<td class="strong-cell">Config Deviation</td>
+<td>—</td>
+<td>配置变更影响</td>
+</tr>
+<tr>
+<td class="strong-cell">Environment</td>
+<td>Fan, Power, Temp</td>
+<td>硬件环境问题</td>
+</tr>
+<tr>
+<td class="strong-cell">Resources</td>
+<td>CPU, Disk, Memory</td>
+<td>系统资源问题</td>
+</tr>
+</table>
+
+<p><strong>Link Health SLE</strong></p>
+<table>
+<tr>
+<th>Classifier</th>
+<th>Sub-classifiers</th>
+</tr>
+<tr>
+<td class="strong-cell">Down Interfaces</td>
+<td>—</td>
+</tr>
+<tr>
+<td class="strong-cell">Bad Optics</td>
+<td>—</td>
+</tr>
+<tr>
+<td class="strong-cell">Hot Cold Interfaces</td>
+<td>Fabric Interfaces, Specific Interfaces</td>
+</tr>
+<tr>
+<td class="strong-cell">Interface Flapping</td>
+<td>Fabric Interfaces, Specific Interfaces</td>
+</tr>
+<tr>
+<td class="strong-cell">LAG Issues</td>
+<td>Imbalance</td>
+</tr>
+</table>
+
+<p><strong>Fabric Health SLE</strong></p>
+<table>
+<tr>
+<th>Classifier</th>
+<th>Sub-classifiers</th>
+</tr>
+<tr>
+<td class="strong-cell">BGP</td>
+<td>IP Reachability Spine to Leaf, Sessions</td>
+</tr>
+<tr>
+<td class="strong-cell">EVPN</td>
+<td>Type 2, Type 3, Type 5, Flood List</td>
+</tr>
+<tr>
+<td class="strong-cell">ECMP</td>
+<td>Imbalance</td>
+</tr>
+</table>
+
+<h4>2.3.2 园区场景（Mist AI）</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">用户体验驱动的 SLE 模型</span></p>
+
+<p><strong>无线 SLE 维度</strong></p>
+<table>
+<tr>
+<th>SLE</th>
+<th>Classifiers</th>
+</tr>
+<tr>
+<td class="strong-cell">Successful Connects</td>
+<td>Association, Authorization, DHCP（分阶段归因分析）</td>
+</tr>
+<tr>
+<td class="strong-cell">Time to Connect</td>
+<td>连接耗时</td>
+</tr>
+<tr>
+<td class="strong-cell">Roaming</td>
+<td>11r, OKC, Non-11r</td>
+</tr>
+<tr>
+<td class="strong-cell">Throughput</td>
+<td>吞吐量达标率</td>
+</tr>
+<tr>
+<td class="strong-cell">Coverage</td>
+<td>RSSI < -72dBm</td>
+</tr>
+<tr>
+<td class="strong-cell">Capacity</td>
+<td>AP 容量利用率</td>
+</tr>
+</table>
+
+<p><strong>有线 SLE 维度</strong>：Successful Connect（端口认证成功率）、Throughput（端口吞吐达标率）、Switch Health（CPU/内存/温度综合状态）</p>
+
+<h3>2.4 华为 iMaster NCE 系列</h3>
+
+<h4>2.4.1 数据中心场景（FabricInsight）</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">面向流级别的质量评估 + 多维加权模型</span></p>
+
+<p><strong>AIDC 专用指标</strong></p>
+<table>
+<tr>
+<th>指标</th>
+<th>阈值</th>
+<th>数据来源</th>
+<th>说明</th>
+</tr>
+<tr>
+<td class="strong-cell">流量丢包率</td>
+<td>0.001%</td>
+<td>INT</td>
+<td>逐流统计</td>
+</tr>
+<tr>
+<td class="strong-cell">端到端时延</td>
+<td>< 10μs (RoCE)</td>
+<td>INT</td>
+<td>微秒级精度</td>
+</tr>
+<tr>
+<td class="strong-cell">ECN 标记率</td>
+<td>1%</td>
+<td>Telemetry</td>
+<td>拥塞程度</td>
+</tr>
+<tr>
+<td class="strong-cell">PFC 暂停帧频率</td>
+<td>100 次/分钟</td>
+<td>Telemetry</td>
+<td>反压状态</td>
+</tr>
+<tr>
+<td class="strong-cell">Buffer 利用率</td>
+<td>80%</td>
+<td>Telemetry</td>
+<td>Memory/Headroom</td>
+</tr>
+<tr>
+<td class="strong-cell">链路利用率</td>
+<td>70%</td>
+<td>Telemetry</td>
+<td>带宽使用</td>
+</tr>
+</table>
+
+<p><strong>计算公式：</strong><code>健康度 = 正常流数 / 总流数 × 100%</code></p>
+
+<div class="summary-box">
+<p><strong>特色能力：</strong></p>
+<ul>
+<li><strong>INT（In-band Network Telemetry）</strong>：逐包采集，微秒级精度</li>
+<li><strong>ML 基线</strong>：机器学习建立网络行为基线，偏差 > 2σ 自动告警</li>
+<li><strong>Fabric 级拓扑健康视图</strong>：Spine-Leaf 每条链路的质量热力图</li>
+</ul>
+</div>
+
+<h4>2.4.2 园区场景（CampusInsight）</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">雷达图六维度模型</span></p>
+
+<table>
+<tr>
+<th>维度</th>
+<th>指标</th>
+<th>阈值</th>
+</tr>
+<tr>
+<td class="strong-cell">接入成功率</td>
+<td>接入成功数/总尝试数</td>
+<td>> 95%</td>
+</tr>
+<tr>
+<td class="strong-cell">接入时长</td>
+<td>平均接入耗时</td>
+<td>< 3s</td>
+</tr>
+<tr>
+<td class="strong-cell">漫游满足率</td>
+<td>成功漫游数/总漫游数</td>
+<td>> 90%</td>
+</tr>
+<tr>
+<td class="strong-cell">信号与干扰</td>
+<td>RSSI, SNR</td>
+<td>RSSI > -70dBm</td>
+</tr>
+<tr>
+<td class="strong-cell">容量健康</td>
+<td>客户端密度</td>
+<td>可配置</td>
+</tr>
+<tr>
+<td class="strong-cell">吞吐满足率</td>
+<td>实际吞吐/预期吞吐</td>
+<td>> 80%</td>
+</tr>
+</table>
+
+<h4>2.4.3 光传输场景（NCE-T）</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">光层 + 电层双维度评估</span></p>
+
+<table>
+<tr>
+<th>层级</th>
+<th>指标</th>
+<th>阈值</th>
+</tr>
+<tr>
+<td class="strong-cell" rowspan="4">光层质量</td>
+<td>光功率偏差</td>
+<td>±3dBm</td>
+</tr>
+<tr>
+<td>OSNR</td>
+<td>18dB</td>
+</tr>
+<tr>
+<td>色散补偿余量</td>
+<td>—</td>
+</tr>
+<tr>
+<td>PMD</td>
+<td>—</td>
+</tr>
+<tr>
+<td class="strong-cell" rowspan="3">电层质量</td>
+<td>误码率（Pre-FEC）</td>
+<td>1e-4</td>
+</tr>
+<tr>
+<td>误码率（Post-FEC）</td>
+<td>1e-15</td>
+</tr>
+<tr>
+<td>OTN 帧错误率</td>
+<td>—</td>
+</tr>
+</table>
+
+<p><strong>计算公式：</strong><code>健康度 = 健康光路数 / 总光路数 × 100%</code></p>
+
+<h3>2.5 华三 SeerAnalyzer + AD-NET 系列</h3>
+
+<h4>2.5.1 数据中心场景</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">基于 Telemetry + AI 的智能分析模型</span></p>
+
+<ul>
+<li><strong>实时数据采集</strong>：基于 Telemetry 技术</li>
+<li><strong>AI 算法分析</strong>：场景化 AI 算法识别网络问题</li>
+<li><strong>预测性维护</strong>：预测潜在网络风险</li>
+</ul>
+
+<h4>2.5.2 园区场景</h4>
+
+<p><strong>健康度模型：</strong><span class="section-tag">AI 驱动的预测性维护模型</span></p>
+
+<ul>
+<li><strong>实时数据获取</strong>：网络状态实时感知</li>
+<li><strong>智能分析</strong>：AI 驱动的故障识别</li>
+<li><strong>预测性维护</strong>：故障预测与预防</li>
+</ul>
+
+<h2>3. 方案 A：通用基础方案</h2>
+
+<div class="summary-box">
+<p><strong>设计原则</strong></p>
+<ol>
+<li>三种场景共用一套公式，不区分数据中心/园区/光传输</li>
+<li>仅依赖基础设施层指标，不涉及业务层指标</li>
+<li>实现简单，适合 MVP 阶段快速上线</li>
+<li>参考 Cisco Catalyst Center 的"健康设备占比"思路</li>
+</ol>
+</div>
+
+<h3>3.1 计算公式</h3>
+
+<pre>
+设备级判定：每台设备判定为 Good / Fair / Poor
+站点健康度 = Good 设备数 / 总设备数 × 100
+</pre>
+
+<h3>3.2 设备状态判定规则</h3>
+
+<table>
+<tr>
+<th>优先级</th>
+<th>状态</th>
+<th>判定条件</th>
+<th>说明</th>
+</tr>
+<tr>
+<td class="strong-cell">1</td>
+<td style="color: #ef4444;">Poor</td>
+<td>设备离线（ICMP/SNMP 不可达）</td>
+<td>最高优先级</td>
+</tr>
+<tr>
+<td class="strong-cell">2</td>
+<td style="color: #ef4444;">Poor</td>
+<td>存在 Critical 级别活跃告警</td>
+<td>严重告警</td>
+</tr>
+<tr>
+<td class="strong-cell">3</td>
+<td style="color: #f59e0b;">Fair</td>
+<td>CPU 利用率 > 90%</td>
+<td>参考 Cisco 阈值</td>
+</tr>
+<tr>
+<td class="strong-cell">4</td>
+<td style="color: #f59e0b;">Fair</td>
+<td>内存利用率 > 90%</td>
+<td>参考 Cisco 阈值</td>
+</tr>
+<tr>
+<td class="strong-cell">5</td>
+<td style="color: #f59e0b;">Fair</td>
+<td>存在 Major 级别活跃告警</td>
+<td>重要告警</td>
+</tr>
+<tr>
+<td class="strong-cell">6</td>
+<td style="color: #f59e0b;">Fair</td>
+<td>接口错误率 > 1%</td>
+<td>链路质量</td>
+</tr>
+<tr>
+<td class="strong-cell">7</td>
+<td style="color: #10b981;">Good</td>
+<td>以上条件均不满足</td>
+<td>设备正常</td>
+</tr>
+</table>
+
+<h3>3.3 状态映射</h3>
+
+<table>
+<tr>
+<th>评分区间</th>
+<th>状态</th>
+<th>颜色</th>
+<th>说明</th>
+</tr>
+<tr>
+<td class="strong-cell">90-100</td>
+<td>健康（Healthy）</td>
+<td style="color: #10b981;">绿色</td>
+<td>网络运行正常</td>
+</tr>
+<tr>
+<td class="strong-cell">70-89</td>
+<td>一般（Fair）</td>
+<td style="color: #f59e0b;">琥珀色</td>
+<td>存在需关注的问题</td>
+</tr>
+<tr>
+<td class="strong-cell">0-69</td>
+<td>异常（Critical）</td>
+<td style="color: #ef4444;">红色</td>
+<td>需要立即处理</td>
+</tr>
+</table>
+
+<h3>3.4 优缺点</h3>
+
+<table>
+<tr>
+<th>优点</th>
+<th>缺点</th>
+</tr>
+<tr>
+<td>
+<ul>
+<li>对齐 Cisco 设计思路，业内认可度高</li>
+<li>设备级判定逻辑清晰，避免重复扣分</li>
+<li>实现简单，适合 MVP 快速上线</li>
+<li>包含 CPU/内存资源检查</li>
+</ul>
+</td>
+<td>
+<ul>
+<li>无法反映场景特有的业务质量</li>
+<li>对光传输场景不够精准</li>
+<li>权重固定，无法按场景调优</li>
+<li>无动态基线能力</li>
+</ul>
+</td>
+</tr>
+</table>
+
+<h2>4. 方案 B：演进专业方案</h2>
+
+<div class="summary-box">
+<p><strong>设计原则</strong></p>
+<ol>
+<li>按场景定制指标和权重</li>
+<li>多维加权模型，参考业内最佳实践</li>
+<li>支持阈值可配置</li>
+<li>每个维度独立评分 0-100，最终加权汇总</li>
+</ol>
+</div>
+
+<h3>4.1 通用公式</h3>
+
+<pre>
+Site Health = Σ (维度评分_i × 权重_i)
+</pre>
+
+<h3>4.2 数据中心场景</h3>
+
+<p><strong>参考厂商：</strong>华为 FabricInsight + Cisco Catalyst Center + Juniper DCA</p>
+
+<table>
+<tr>
+<th>维度</th>
+<th>权重</th>
+<th>说明</th>
+<th>参考厂商</th>
+</tr>
+<tr>
+<td class="strong-cell">设备可用性</td>
+<td>25%</td>
+<td>设备在线率、可达性</td>
+<td>Cisco</td>
+</tr>
+<tr>
+<td class="strong-cell">设备资源</td>
+<td>15%</td>
+<td>CPU、内存、温度</td>
+<td>Cisco + Arista</td>
+</tr>
+<tr>
+<td class="strong-cell">链路质量</td>
+<td>15%</td>
+<td>链路错误率、丢包率、Up/Down</td>
+<td>Cisco</td>
+</tr>
+<tr>
+<td class="strong-cell">Fabric 健康</td>
+<td>20%</td>
+<td>BGP/EVPN 会话、ECMP 负载均衡</td>
+<td>Juniper DCA</td>
+</tr>
+<tr>
+<td class="strong-cell">RoCE/RDMA 质量</td>
+<td>15%</td>
+<td>ECN 标记率、PFC 暂停、Buffer</td>
+<td>华为</td>
+</tr>
+<tr>
+<td class="strong-cell">网络服务</td>
+<td>10%</td>
+<td>AAA/DNS/DHCP 服务可用性</td>
+<td>Cisco</td>
+</tr>
+</table>
+
+<h3>4.3 园区场景</h3>
+
+<p><strong>参考厂商：</strong>Juniper Mist SLE + Arista CUE + Cisco Catalyst Center</p>
+
+<table>
+<tr>
+<th>维度</th>
+<th>权重</th>
+<th>说明</th>
+<th>参考厂商</th>
+</tr>
+<tr>
+<td class="strong-cell">设备可用性</td>
+<td>15%</td>
+<td>交换机/AP 在线率</td>
+<td>Cisco</td>
+</tr>
+<tr>
+<td class="strong-cell">基础设施健康</td>
+<td>15%</td>
+<td>AP CPU/内存/Crash/Reboot/Low Power</td>
+<td>Arista CUE</td>
+</tr>
+<tr>
+<td class="strong-cell">有线网络质量</td>
+<td>15%</td>
+<td>端口 Up 率、错误率</td>
+<td>Juniper Mist Wired SLE</td>
+</tr>
+<tr>
+<td class="strong-cell">无线网络质量</td>
+<td>20%</td>
+<td>覆盖率、信号强度、连接成功率</td>
+<td>Juniper Mist + Arista</td>
+</tr>
+<tr>
+<td class="strong-cell">用户体验</td>
+<td>15%</td>
+<td>认证/DHCP/漫游/应用体验</td>
+<td>Juniper Mist SLE</td>
+</tr>
+<tr>
+<td class="strong-cell">网络服务</td>
+<td>10%</td>
+<td>AAA/DNS/DHCP 服务可用性</td>
+<td>Cisco</td>
+</tr>
+<tr>
+<td class="strong-cell">告警状态</td>
+<td>10%</td>
+<td>活跃告警数量与严重程度</td>
+<td>通用</td>
+</tr>
+</table>
+
+<h3>4.4 光传输场景</h3>
+
+<p><strong>参考厂商：</strong>华为 iMaster NCE-T</p>
+
+<table>
+<tr>
+<th>维度</th>
+<th>权重</th>
+<th>说明</th>
+</tr>
+<tr>
+<td class="strong-cell">设备可用性</td>
+<td>20%</td>
+<td>OTN/DWDM 设备在线率</td>
+</tr>
+<tr>
+<td class="strong-cell">光层质量</td>
+<td>30%</td>
+<td>光功率、OSNR、误码率</td>
+</tr>
+<tr>
+<td class="strong-cell">通道利用率</td>
+<td>15%</td>
+<td>波长通道占用率</td>
+</tr>
+<tr>
+<td class="strong-cell">保护倒换</td>
+<td>15%</td>
+<td>保护路径可用性、倒换次数</td>
+</tr>
+<tr>
+<td class="strong-cell">网络服务</td>
+<td>5%</td>
+<td>管理通道可用性</td>
+</tr>
+<tr>
+<td class="strong-cell">告警状态</td>
+<td>15%</td>
+<td>活跃告警数量与严重程度</td>
+</tr>
+</table>
+
+<h3>4.5 阈值模式</h3>
+
+<table>
+<tr>
+<th>模式</th>
+<th>健康</th>
+<th>一般</th>
+<th>异常</th>
+<th>适用场景</th>
+</tr>
+<tr>
+<td class="strong-cell">标准模式（默认）</td>
+<td>≥ 90</td>
+<td>70-89</td>
+<td>< 70</td>
+<td>一般企业网络</td>
+</tr>
+<tr>
+<td class="strong-cell">严格模式</td>
+<td>≥ 95</td>
+<td>85-94</td>
+<td>< 85</td>
+<td>金融/医疗等高可用场景</td>
+</tr>
+</table>
+
+<p><strong>子指标阈值计算方式：</strong></p>
+<table>
+<tr>
+<th>方式</th>
+<th>说明</th>
+<th>适用</th>
+</tr>
+<tr>
+<td class="strong-cell">静态阈值（默认）</td>
+<td>管理员手动配置固定阈值（如 CPU > 80%）</td>
+<td>所有场景</td>
+</tr>
+<tr>
+<td class="strong-cell">动态基线</td>
+<td>阈值 = mean + 2σ（参考 Arista CUE），基于历史 7 天数据自动计算</td>
+<td>方案 B v2.1+</td>
+</tr>
+</table>
+
+<h2>5. 方案对比与演进路径</h2>
+
+<h3>5.1 两套方案对比</h3>
+
+<table>
+<tr>
+<th>对比项</th>
+<th>方案 A（通用基础）</th>
+<th>方案 B（演进专业）</th>
+</tr>
+<tr>
+<td class="strong-cell">计算模型</td>
+<td>设备分类聚合（Good/Fair/Poor）</td>
+<td>多维加权（按场景定制）</td>
+</tr>
+<tr>
+<td class="strong-cell">实现复杂度</td>
+<td>低</td>
+<td>高</td>
+</tr>
+<tr>
+<td class="strong-cell">数据依赖</td>
+<td>设备状态 + 告警 + CPU/内存</td>
+<td>+ Fabric/业务指标 + Telemetry + Network Services</td>
+</tr>
+<tr>
+<td class="strong-cell">场景区分</td>
+<td>不区分</td>
+<td>数据中心/园区/光传输分别定制</td>
+</tr>
+<tr>
+<td class="strong-cell">评分精准度</td>
+<td>中等</td>
+<td>高</td>
+</tr>
+<tr>
+<td class="strong-cell">可解释性</td>
+<td>高（设备级 Good/Fair/Poor 透明）</td>
+<td>中（多维加权需文档说明）</td>
+</tr>
+<tr>
+<td class="strong-cell">{}
+阈值模式</td>
+<td>固定（90/70）</td>
+<td>标准/严格 + 静态/动态基线</td>
+</tr>
+<tr>
+<td class="strong-cell">对标厂商</td>
+<td>Cisco Catalyst Center</td>
+<td>Cisco + Arista + Juniper + 华为</td>
+</tr>
+<tr>
+<td class="strong-cell">适用阶段</td>
+<td>MVP / v1.0</td>
+<td>v2.0+</td>
+</tr>
+<tr>
+<td class="strong-cell">开发周期</td>
+<td>1-2 周</td>
+<td>4-6 周</td>
+</tr>
+</table>
+
+<h3>5.2 演进路径</h3>
+
+<div class="summary-box">
+<p><strong>建议路径：</strong></p>
+<ol>
+<li><strong>v1.0 上线方案 A</strong>，快速交付，覆盖基本健康度展示需求</li>
+<li><strong>v2.0 升级方案 B</strong>，增加 Network Services、Fabric 健康、用户体验、动态基线能力</li>
+<li>方案 A → B 的过渡是平滑的：方案 A 的设备/告警/链路维度在方案 B 中完全保留，只是增加了业务层维度和场景化权重</li>
+</ol>
+</div>
+
+<h2>6. 参考文档</h2>
+
+<table>
+<tr>
+<th>厂商</th>
+<th>文档</th>
+<th>链接</th>
+</tr>
+<tr>
+<td class="strong-cell">Arista</td>
+<td>CloudVision CUE SLA Dashboard</td>
+<td><a href="https://www.arista.com/en/ug-cv-cue/cv-cue-dashboards">arista.com/en/ug-cv-cue/cv-cue-dashboards</a></td>
+</tr>
+<tr>
+<td class="strong-cell">Arista</td>
+<td>CloudVision CUE Baselines</td>
+<td><a href="https://www.arista.com/ug-cv-cue/cv-cue-baselines">arista.com/ug-cv-cue/cv-cue-baselines</a></td>
+</tr>
+<tr>
+<td class="strong-cell">Arista</td>
+<td>System Health AQL</td>
+<td><a href="https://aql.arista.com/examples/system_health/index.html">aql.arista.com/examples/system_health</a></td>
+</tr>
+<tr>
+<td class="strong-cell">Cisco</td>
+<td>Catalyst Center Health Monitoring API</td>
+<td><a href="https://developer.cisco.com/docs/catalyst-center/health-monitoring/">developer.cisco.com/docs/catalyst-center/health-monitoring</a></td>
+</tr>
+<tr>
+<td class="strong-cell">Juniper</td>
+<td>Data Center Assurance SLE Overview</td>
+<td><a href="https://www.juniper.net/documentation/us/en/software/juniper-data-center-assurance/">juniper.net/documentation/.../sle-overview</a></td>
+</tr>
+<tr>
+<td class="strong-cell">Juniper</td>
+<td>Mist SLE Overview</td>
+<td><a href="https://www.juniper.net/documentation/us/en/software/mist/mist-aiops/">juniper.net/documentation/.../service-level-expectations</a></td>
+</tr>
+<tr>
+<td class="strong-cell">华为</td>
+<td>iMaster NCE-FabricInsight</td>
+<td><a href="https://e.huawei.com/en/products/network-analysis/fabricinsight">e.huawei.com/.../fabricinsight</a></td>
+</tr>
+<tr>
+<td class="strong-cell">华为</td>
+<td>iMaster NCE-CampusInsight</td>
+<td><a href="https://e.huawei.com/en/products/network-analysis/campusinsight">e.huawei.com/.../campusinsight</a></td>
+</tr>
+<tr>
+<td class="strong-cell">华三</td>
+<td>SeerAnalyzer-DC</td>
+<td><a href="https://www.h3c.com/en/Products_and_Solutions/InterConnect/Data_Center/">h3c.com/.../SeerAnalyzer</a></td>
+</tr>
+</table>
+
+<h2>7. 变更记录</h2>
+
+<table>
+<tr>
+<th>版本</th>
+<th>日期</th>
+<th>变更内容</th>
+<th>作者</th>
+</tr>
+<tr>
+<td class="strong-cell">v1.0</td>
+<td>2026-05-06</td>
+<td>初始版本，深度调研 Arista/Cisco/Juniper/华为/华三健康分数方案，输出通用基础方案和演进专业方案</td>
+<td>AmpCon Product Team</td>
+</tr>
+</table>
+
+</body>
+</html>

@@ -1,0 +1,5 @@
+{
+  "name": "AmpCon",
+  "description": "A high-performance, plugin-based network management platform inspired by UniFi, featuring a unified PaaS base and scalable SaaS application layers for Campus, DC, and Optical networks.",
+  "requestFramePermissions": []
+}

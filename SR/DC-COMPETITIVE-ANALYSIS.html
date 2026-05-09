@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>DC Fabric 竞争分析清单</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; padding: 24px; background: #fff; color: #1f2329; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #3370ff; }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; }
+  p, li { font-size: 14px; line-height: 1.8; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 13px; }
+  th { background: #f0f2f5; font-weight: 600; text-align: center; padding: 8px 10px; border: 1px solid #dee0e3; white-space: nowrap; }
+  td { padding: 6px 10px; border: 1px solid #dee0e3; vertical-align: middle; }
+  td:first-child, td:nth-child(2), td:nth-child(3) { white-space: nowrap; }
+  .tag-yes { display: inline-block; background: #d4f5e2; color: #1a7f37; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-no { display: inline-block; background: #f5f5f5; color: #8f959e; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-partial { display: inline-block; background: #fff3e0; color: #b86e00; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .phase-tag { display: inline-block; background: #e8f3ff; color: #3370ff; padding: 2px 10px; border-radius: 4px; font-size: 13px; font-weight: 600; margin-right: 6px; }
+  .summary-table td:first-child { font-weight: 600; white-space: nowrap; }
+  .legend { margin: 16px 0; padding: 12px 16px; background: #f7f8fa; border-radius: 8px; font-size: 13px; }
+  .legend span { margin-right: 20px; }
+</style>
+</head>
+<body>
+
+<h1>DC Fabric 竞争分析清单</h1>
+<p style="color:#646a73; margin-bottom: 24px;">场景：数据中心（DC） · 按 Day 0 / Day 1 / Day 2 生命周期阶段组织 · 将详细功能清单抽象为 Level-1 功能集</p>
+
+<div class="legend">
+  <span><span class="tag-yes">✅ 支持</span></span>
+  <span><span class="tag-partial">🔶 部分支持</span></span>
+  <span><span class="tag-no">— 未支持</span></span>
+</div>
+
+<!-- ==================== Day 0 ==================== -->
+<h2><span class="phase-tag">Day 0</span> 基础建设与开局</h2>
+
+<table>
+<thead>
+<tr>
+  <th style="min-width:110px">Level-1 功能集</th>
+  <th style="min-width:180px">Level-2 子功能</th>
+  <th style="min-width:160px">价值点</th>
+  <th>AmpCon</th>
+  <th>H3C AD-DC</th>
+  <th>华为 iMaster NCE</th>
+  <th>锐捷</th>
+  <th>NetQ</th>
+  <th>Arista CV</th>
+</tr>
+</thead>
+<tbody>
+<!-- 基础架构 -->
+<tr>
+  <td rowspan="3" style="font-weight:600; background:#fafbfc;">基础架构</td>
+  <td>控制器部署模式（单机/集群/云原生）</td>
+  <td>降低部署门槛，弹性扩展</td>
+  <td><span class="tag-partial">🔶 单机</span></td>
+  <td><span class="tag-yes">✅ 集群</span></td>
+  <td><span class="tag-yes">✅ 集群+云原生</span></td>
+  <td><span class="tag-partial">🔶 单机</span></td>
+  <td><span class="tag-yes">✅ 云原生</span></td>
+  <td><span class="tag-yes">✅ 云原生+SaaS</span></td>
+</tr>
+<tr>
+  <td>多站点/多数据中心管理</td>
+  <td>统一管理多DC，减少运维复杂度</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>高可用与灾备</td>
+  <td>保障业务连续性</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 可视化GUI -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">可视化 GUI</td>
+  <td>拓扑自动发现与展示</td>
+  <td>直观掌握网络全貌</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>多层级下钻（全局→站点→设备→链路）</td>
+  <td>快速定位问题层级</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>2D/3D 视图切换</td>
+  <td>满足不同展示场景需求</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+</tr>
+<tr>
+  <td>Dashboard 健康度总览</td>
+  <td>一屏掌握全局健康状态</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 拓扑发现 -->
+<tr>
+  <td rowspan="3" style="font-weight:600; background:#fafbfc;">拓扑发现</td>
+  <td>LLDP/CDP 自动发现</td>
+  <td>零配置感知网络拓扑</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>设备自动注册与纳管</td>
+  <td>降低设备上线人工成本</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>拓扑变更感知与告警</td>
+  <td>实时感知网络变化</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- Fabric 构建 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">Fabric 构建</td>
+  <td>Spine-Leaf 架构自动构建</td>
+  <td>一键构建标准化DC网络</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>CLOS 拓扑模板</td>
+  <td>标准化设计，减少人为错误</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>多级 Spine（Super Spine）支持</td>
+  <td>支持大规模DC扩展</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>Fabric 拓扑校验</td>
+  <td>上线前验证配置正确性</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 资源池 -->
+<tr>
+  <td rowspan="3" style="font-weight:600; background:#fafbfc;">资源池</td>
+  <td>IP 地址池管理（Underlay/Loopback/P2P）</td>
+  <td>自动化IP分配，避免冲突</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>VLAN/VNI 资源池</td>
+  <td>统一管理二层/Overlay标识</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>AS 号资源池</td>
+  <td>自动分配BGP AS号</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<!-- Underlay 网络配置 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">Underlay 网络配置</td>
+  <td>BGP Underlay 自动配置</td>
+  <td>自动化Underlay路由部署</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>OSPF/ISIS Underlay 支持</td>
+  <td>灵活选择Underlay路由协议</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>ECMP 多路径配置</td>
+  <td>提升带宽利用率和冗余</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>BFD 快速检测</td>
+  <td>毫秒级故障检测</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 配置管理 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">配置管理</td>
+  <td>配置模板化</td>
+  <td>标准化配置，减少错误</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>配置版本管理与回滚</td>
+  <td>变更可追溯，快速回退</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>配置一致性校验</td>
+  <td>确保实际配置与期望一致</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>配置差异对比</td>
+  <td>快速识别配置偏差</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 自动化管理 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">自动化管理</td>
+  <td>ZTP（零配置部署）</td>
+  <td>设备即插即用</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>批量设备上线</td>
+  <td>大规模部署效率提升</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>固件批量升级</td>
+  <td>统一版本管理</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>自动化编排（Workflow/Playbook）</td>
+  <td>复杂操作流程化</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 第三方对接 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">第三方对接</td>
+  <td>北向 REST API</td>
+  <td>与上层系统集成</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>南向多协议（NETCONF/gNMI/SSH）</td>
+  <td>兼容多厂商设备</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶 仅自有</span></td>
+  <td><span class="tag-partial">🔶 仅自有</span></td>
+  <td><span class="tag-partial">🔶 仅自有</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>Ansible/Terraform 集成</td>
+  <td>融入DevOps工具链</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>VMware/OpenStack 对接</td>
+  <td>网络与计算联动</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+</tbody>
+</table>
+
+<!-- ==================== Day 1 ==================== -->
+<h2><span class="phase-tag">Day 1</span> 业务部署与网络服务</h2>
+
+<table>
+<thead>
+<tr>
+  <th style="min-width:110px">Level-1 功能集</th>
+  <th style="min-width:180px">Level-2 子功能</th>
+  <th style="min-width:160px">价值点</th>
+  <th>AmpCon</th>
+  <th>H3C AD-DC</th>
+  <th>华为 iMaster NCE</th>
+  <th>锐捷</th>
+  <th>NetQ</th>
+  <th>Arista CV</th>
+</tr>
+</thead>
+<tbody>
+<!-- Fabric 网络能力 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">Fabric 网络能力</td>
+  <td>VXLAN EVPN 支持</td>
+  <td>主流DC Overlay技术</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>分布式网关（Anycast GW）</td>
+  <td>消除流量绕行</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>多租户 VRF 隔离</td>
+  <td>业务安全隔离</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>DCI（数据中心互联）</td>
+  <td>多DC业务互通</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- Overlay 网络配置 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">Overlay 网络配置</td>
+  <td>VXLAN 隧道自动建立</td>
+  <td>自动化Overlay部署</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>EVPN 路由策略配置</td>
+  <td>精细化路由控制</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>ARP 抑制</td>
+  <td>减少广播风暴</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>Storm Control</td>
+  <td>防止流量风暴</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 租户网络配置 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">租户网络配置</td>
+  <td>租户/VRF 创建与管理</td>
+  <td>多租户业务隔离</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>子网/网段管理</td>
+  <td>灵活的IP地址规划</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>安全组/ACL 策略</td>
+  <td>租户间访问控制</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>QoS 策略配置</td>
+  <td>业务流量优先级保障</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- L4-L7 层服务接入 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">L4-L7 层服务接入</td>
+  <td>负载均衡器对接</td>
+  <td>应用层流量分发</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>防火墙服务链</td>
+  <td>安全服务自动编排</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>服务链（Service Chain）</td>
+  <td>灵活的服务编排</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+</tr>
+<tr>
+  <td>微分段（Micro-Segmentation）</td>
+  <td>细粒度安全隔离</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+</tbody>
+</table>
+
+<!-- ==================== Day 2 ==================== -->
+<h2><span class="phase-tag">Day 2</span> 运维监控与持续优化</h2>
+
+<table>
+<thead>
+<tr>
+  <th style="min-width:110px">Level-1 功能集</th>
+  <th style="min-width:180px">Level-2 子功能</th>
+  <th style="min-width:160px">价值点</th>
+  <th>AmpCon</th>
+  <th>H3C AD-DC</th>
+  <th>华为 iMaster NCE</th>
+  <th>锐捷</th>
+  <th>NetQ</th>
+  <th>Arista CV</th>
+</tr>
+</thead>
+<tbody>
+<!-- 设备维护 -->
+<tr>
+  <td rowspan="3" style="font-weight:600; background:#fafbfc;">设备维护</td>
+  <td>设备状态监控（CPU/内存/温度）</td>
+  <td>实时掌握设备健康</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>设备固件管理与升级</td>
+  <td>统一版本，修复漏洞</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>设备生命周期管理</td>
+  <td>资产全生命周期可视</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 链路监控 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">链路监控</td>
+  <td>链路带宽利用率监控</td>
+  <td>识别带宽瓶颈</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>链路质量监控（延迟/丢包/抖动）</td>
+  <td>保障业务SLA</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>链路故障自动检测</td>
+  <td>快速发现链路异常</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>流量可视化（sFlow/NetFlow）</td>
+  <td>深度流量分析</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 告警管理 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">告警管理</td>
+  <td>多级告警（Critical/Major/Minor/Warning）</td>
+  <td>分级处理，聚焦关键问题</td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>告警聚合与根因分析</td>
+  <td>减少告警风暴，定位根因</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>告警通知（邮件/Webhook/短信）</td>
+  <td>及时触达运维人员</td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>告警与工单系统联动</td>
+  <td>闭环运维流程</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 故障诊断 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">故障诊断</td>
+  <td>Traceroute/Ping 可视化</td>
+  <td>快速定位故障路径</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>VXLAN 路径追踪</td>
+  <td>Overlay网络故障定位</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>配置合规性检查</td>
+  <td>持续确保配置合规</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<tr>
+  <td>网络快照与对比</td>
+  <td>变更前后状态对比</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-yes">✅</span></td>
+</tr>
+<!-- 智能运维 -->
+<tr>
+  <td rowspan="4" style="font-weight:600; background:#fafbfc;">智能运维（AIOps）</td>
+  <td>AI 异常检测</td>
+  <td>主动发现潜在问题</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>容量预测与规划</td>
+  <td>提前规划扩容</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-partial">🔶</span></td>
+</tr>
+<tr>
+  <td>智能推荐（配置/策略）</td>
+  <td>降低运维决策门槛</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+</tr>
+<tr>
+  <td>自然语言运维（ChatOps）</td>
+  <td>降低运维操作门槛</td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-yes">✅</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+  <td><span class="tag-no">—</span></td>
+</tr>
+</tbody>
+</table>
+
+<!-- ==================== 竞品能力总结 ==================== -->
+<h2>竞品能力总结</h2>
+
+<table class="summary-table">
+<thead>
+<tr>
+  <th style="min-width:140px">评估维度</th>
+  <th>AmpCon</th>
+  <th>H3C AD-DC</th>
+  <th>华为 iMaster NCE</th>
+  <th>锐捷</th>
+  <th>NetQ (NVIDIA)</th>
+  <th>Arista CloudVision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Day 0 覆盖度</td>
+  <td style="color:#d32; font-weight:600;">低（可视化+部分自动化）</td>
+  <td style="color:#1a7f37;">高</td>
+  <td style="color:#1a7f37; font-weight:600;">很高</td>
+  <td style="color:#b86e00;">中</td>
+  <td style="color:#b86e00;">中</td>
+  <td style="color:#1a7f37;">高</td>
+</tr>
+<tr>
+  <td>Day 1 覆盖度</td>
+  <td style="color:#d32; font-weight:600;">无</td>
+  <td style="color:#1a7f37;">高</td>
+  <td style="color:#1a7f37; font-weight:600;">很高</td>
+  <td style="color:#b86e00;">中</td>
+  <td style="color:#d32;">低</td>
+  <td style="color:#1a7f37;">高</td>
+</tr>
+<tr>
+  <td>Day 2 覆盖度</td>
+  <td style="color:#b86e00; font-weight:600;">中低（基础监控+告警）</td>
+  <td style="color:#1a7f37;">高</td>
+  <td style="color:#1a7f37; font-weight:600;">很高</td>
+  <td style="color:#b86e00;">中</td>
+  <td style="color:#1a7f37;">高</td>
+  <td style="color:#1a7f37;">高</td>
+</tr>
+<tr>
+  <td>多厂商支持</td>
+  <td style="color:#1a7f37;">是（核心定位）</td>
+  <td>否（自有生态）</td>
+  <td>有限（自有优先）</td>
+  <td>否（自有生态）</td>
+  <td style="color:#1a7f37;">是（开放）</td>
+  <td style="color:#1a7f37;">是（开放）</td>
+</tr>
+<tr>
+  <td>AIOps 能力</td>
+  <td style="color:#d32;">无</td>
+  <td style="color:#b86e00;">弱</td>
+  <td style="color:#1a7f37; font-weight:600;">强</td>
+  <td style="color:#d32;">无</td>
+  <td style="color:#b86e00;">弱</td>
+  <td style="color:#b86e00;">弱</td>
+</tr>
+<tr>
+  <td>开放性 / API</td>
+  <td style="color:#b86e00;">待建设</td>
+  <td>一般</td>
+  <td>较好</td>
+  <td style="color:#d32;">弱</td>
+  <td style="color:#1a7f37;">好</td>
+  <td style="color:#1a7f37;">好</td>
+</tr>
+<tr>
+  <td>部署灵活性</td>
+  <td style="color:#1a7f37;">轻量</td>
+  <td>重量级</td>
+  <td>重量级</td>
+  <td>中等</td>
+  <td style="color:#1a7f37;">轻量</td>
+  <td>SaaS + 本地</td>
+</tr>
+<tr style="background:#f7f8fa;">
+  <td style="color:#3370ff;">核心优势</td>
+  <td>轻量可视化<br>多厂商定位</td>
+  <td>国产自主<br>全栈整合</td>
+  <td>全生命周期<br>AI驱动</td>
+  <td>性价比<br>教育行业</td>
+  <td>开放生态<br>Telemetry</td>
+  <td>云原生<br>NetDB状态流</td>
+</tr>
+<tr style="background:#fff5f5;">
+  <td style="color:#d32;">核心短板</td>
+  <td>Day1能力缺失</td>
+  <td>封闭生态</td>
+  <td>成本高、绑定深</td>
+  <td>功能深度不足</td>
+  <td>无Day1配置能力</td>
+  <td>价格高</td>
+</tr>
+</tbody>
+</table>
+
+<!-- ==================== 校对变更说明 ==================== -->
+<h2>校对变更说明</h2>
+<p style="color:#646a73; font-size:13px; line-height:2;">根据原始图片数据校对，主要修正如下：</p>
+<table>
+<thead>
+<tr><th>区域</th><th>功能项</th><th>厂商</th><th>修正前</th><th>修正后</th></tr>
+</thead>
+<tbody>
+<tr><td>Day 0</td><td>控制器部署模式</td><td>AmpCon</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶 单机</span></td></tr>
+<tr><td>Day 0</td><td>多层级下钻</td><td>H3C / 锐捷 / NetQ</td><td><span class="tag-yes">✅</span> / <span class="tag-no">—</span> / <span class="tag-yes">✅</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>LLDP/CDP 自动发现</td><td>AmpCon</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>设备自动注册与纳管</td><td>AmpCon / NetQ</td><td><span class="tag-no">—</span> / <span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>拓扑变更感知</td><td>锐捷</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>CLOS 拓扑模板</td><td>锐捷</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>Fabric 拓扑校验</td><td>NetQ</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>IP 地址池</td><td>锐捷 / Arista</td><td><span class="tag-no">—</span> / <span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>VLAN/VNI 资源池</td><td>Arista</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>AS 号资源池</td><td>Arista</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>BGP Underlay</td><td>NetQ</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>OSPF/ISIS Underlay</td><td>Arista</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>BFD 快速检测</td><td>NetQ</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>配置版本管理</td><td>锐捷</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>ZTP</td><td>AmpCon / NetQ</td><td><span class="tag-no">—</span> / <span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>批量设备上线 / 固件升级</td><td>AmpCon</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>固件批量升级</td><td>NetQ</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>北向 REST API</td><td>AmpCon / 锐捷</td><td><span class="tag-no">—</span> / <span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 0</td><td>南向多协议</td><td>AmpCon / 华为</td><td><span class="tag-no">—</span> / <span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span> / <span class="tag-partial">🔶 仅自有</span></td></tr>
+<tr><td>Day 0</td><td>Ansible/Terraform</td><td>华为</td><td><span class="tag-yes">✅</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 1</td><td>EVPN 路由策略</td><td>锐捷</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 1</td><td>Storm Control</td><td>NetQ</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 1</td><td>安全组/ACL / QoS</td><td>锐捷</td><td><span class="tag-yes">✅</span> / <span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 1</td><td>负载均衡/防火墙/微分段</td><td>Arista</td><td><span class="tag-yes">✅</span> / <span class="tag-yes">✅</span> / <span class="tag-yes">✅</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>设备状态监控 / 固件升级</td><td>AmpCon</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>设备固件管理</td><td>NetQ</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>链路质量监控</td><td>锐捷</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>链路故障检测</td><td>AmpCon</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>流量可视化</td><td>锐捷</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>告警聚合</td><td>H3C / NetQ</td><td><span class="tag-yes">✅</span> / <span class="tag-yes">✅</span></td><td><span class="tag-partial">🔶</span> / <span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>告警通知</td><td>AmpCon</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>告警与工单联动</td><td>H3C</td><td><span class="tag-yes">✅</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>VXLAN 路径追踪</td><td>H3C</td><td><span class="tag-yes">✅</span></td><td><span class="tag-partial">🔶</span></td></tr>
+<tr><td>Day 2</td><td>AI 异常检测 / 容量预测</td><td>Arista</td><td><span class="tag-no">—</span></td><td><span class="tag-partial">🔶</span></td></tr>
+</tbody>
+</table>
+
+<!-- ==================== AmpCon 差距分析 ==================== -->
+<h2>AmpCon 差距分析与建议优先级</h2>
+
+<table>
+<thead>
+<tr>
+  <th style="width:60px">优先级</th>
+  <th style="width:40px">序号</th>
+  <th>功能方向</th>
+  <th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td rowspan="5" style="font-weight:700; text-align:center; vertical-align:middle;"><span style="display:inline-block; background:#fee; color:#d32; padding:2px 12px; border-radius:4px; font-size:13px;">P0</span><br><span style="font-size:11px; color:#8f959e; font-weight:400;">竞品普遍具备<br>客户基本诉求</span></td>
+  <td style="text-align:center;">1</td>
+  <td style="font-weight:600;">Fabric 自动构建</td>
+  <td>Spine-Leaf 模板化部署，一键构建标准化DC网络</td>
+</tr>
+<tr>
+  <td style="text-align:center;">2</td>
+  <td style="font-weight:600;">VXLAN EVPN Overlay 配置</td>
+  <td>Day 1 核心能力，自动化Overlay网络部署</td>
+</tr>
+<tr>
+  <td style="text-align:center;">3</td>
+  <td style="font-weight:600;">ZTP 零配置部署</td>
+  <td>设备即插即用，降低大规模上线成本</td>
+</tr>
+<tr>
+  <td style="text-align:center;">4</td>
+  <td style="font-weight:600;">设备状态监控</td>
+  <td>CPU/内存/接口实时监控，Day 2 基础能力</td>
+</tr>
+<tr>
+  <td style="text-align:center;">5</td>
+  <td style="font-weight:600;">告警聚合与通知</td>
+  <td>告警根因分析 + 多渠道通知，运维闭环</td>
+</tr>
+<tr>
+  <td rowspan="5" style="font-weight:700; text-align:center; vertical-align:middle;"><span style="display:inline-block; background:#fff3e0; color:#b86e00; padding:2px 12px; border-radius:4px; font-size:13px;">P1</span><br><span style="font-size:11px; color:#8f959e; font-weight:400;">差异化竞争力</span></td>
+  <td style="text-align:center;">6</td>
+  <td style="font-weight:600;">资源池管理</td>
+  <td>IP/VLAN/VNI/AS 统一资源池，自动化分配</td>
+</tr>
+<tr>
+  <td style="text-align:center;">7</td>
+  <td style="font-weight:600;">配置版本管理与回滚</td>
+  <td>变更可追溯，一键回退，降低变更风险</td>
+</tr>
+<tr>
+  <td style="text-align:center;">8</td>
+  <td style="font-weight:600;">租户/VRF 多租户管理</td>
+  <td>多租户业务隔离，子网/ACL/QoS 策略配置</td>
+</tr>
+<tr>
+  <td style="text-align:center;">9</td>
+  <td style="font-weight:600;">VXLAN 路径追踪</td>
+  <td>Overlay网络故障诊断，端到端路径可视化</td>
+</tr>
+<tr>
+  <td style="text-align:center;">10</td>
+  <td style="font-weight:600;">北向 REST API 开放</td>
+  <td>与上层系统集成，构建开放生态</td>
+</tr>
+<tr>
+  <td rowspan="5" style="font-weight:700; text-align:center; vertical-align:middle;"><span style="display:inline-block; background:#f0f2f5; color:#646a73; padding:2px 12px; border-radius:4px; font-size:13px;">P2</span><br><span style="font-size:11px; color:#8f959e; font-weight:400;">长期演进</span></td>
+  <td style="text-align:center;">11</td>
+  <td style="font-weight:600;">AIOps 智能运维</td>
+  <td>AI异常检测、容量预测、智能推荐</td>
+</tr>
+<tr>
+  <td style="text-align:center;">12</td>
+  <td style="font-weight:600;">L4-L7 服务链编排</td>
+  <td>负载均衡/防火墙服务链自动编排</td>
+</tr>
+<tr>
+  <td style="text-align:center;">13</td>
+  <td style="font-weight:600;">DCI 数据中心互联</td>
+  <td>多数据中心业务互通</td>
+</tr>
+<tr>
+  <td style="text-align:center;">14</td>
+  <td style="font-weight:600;">网络快照与对比</td>
+  <td>变更前后全网状态快照对比</td>
+</tr>
+<tr>
+  <td style="text-align:center;">15</td>
+  <td style="font-weight:600;">ChatOps 自然语言运维</td>
+  <td>自然语言交互，降低运维操作门槛</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

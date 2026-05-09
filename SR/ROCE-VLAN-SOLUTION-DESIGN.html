@@ -1,0 +1,1442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IP Fabric VLAN-RoCE 业务开通 - 方案设计 &amp; UI 设计</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei','Segoe UI',Roboto,sans-serif;line-height:1.8;color:#1f2329;background:#fff;padding:32px 24px}
+.container{max-width:1100px;margin:0 auto}
+h1{font-size:26px;font-weight:700;margin:0 0 6px;color:#1f2329}
+h2{font-size:21px;font-weight:600;margin:36px 0 14px;padding-bottom:6px;border-bottom:2px solid #3370ff}
+h3{font-size:17px;font-weight:600;margin:28px 0 10px;color:#1f2329}
+h4{font-size:15px;font-weight:600;margin:20px 0 8px;color:#3370ff}
+p{margin:6px 0;font-size:14px}
+table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:13px}
+thead th{background:#f0f2f5;font-weight:600;text-align:left;padding:8px 10px;border:1px solid #dee0e3;white-space:nowrap}
+tbody td{padding:7px 10px;border:1px solid #dee0e3;vertical-align:top}
+tbody tr:nth-child(even){background:#fafbfc}
+pre{background:#f5f5f5;padding:14px;border-radius:6px;overflow-x:auto;margin:10px 0;font-size:12px;line-height:1.6;font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace}
+code{background:#f0f0f0;padding:2px 5px;border-radius:3px;font-size:12px;font-family:'SFMono-Regular',Consolas,monospace}
+ul,ol{margin:6px 0 6px 22px;font-size:14px}
+li{margin:3px 0}
+blockquote{border-left:4px solid #3370ff;padding:8px 16px;margin:12px 0;color:#555;background:#f7f8fa;border-radius:0 4px 4px 0}
+.tag{display:inline-block;padding:1px 8px;border-radius:4px;font-size:12px;font-weight:500}
+.tag-p0{background:#fee;color:#d32}
+.tag-p1{background:#fff3e0;color:#b86e00}
+.tag-info{background:#e8f3ff;color:#3370ff}
+.tag-success{background:#d4f5e2;color:#1a7f37}
+.tag-warn{background:#fff3e0;color:#b86e00}
+.flow-box{background:#f7f8fa;border:1px solid #e5e6eb;border-radius:8px;padding:20px;margin:16px 0;font-size:13px;line-height:2}
+.flow-box .step{display:flex;align-items:flex-start;margin:4px 0}
+.flow-box .step-num{flex-shrink:0;width:28px;height:28px;background:#3370ff;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;margin-right:12px;margin-top:2px}
+.flow-box .arrow{text-align:center;color:#8f959e;font-size:18px;margin:2px 0 2px 8px}
+.ui-frame{border:2px solid #dee0e3;border-radius:12px;overflow:hidden;margin:16px 0 24px;background:#fff;box-shadow:0 2px 12px rgba(0,0,0,.06)}
+.ui-titlebar{background:#f0f2f5;padding:8px 16px;display:flex;align-items:center;gap:8px;border-bottom:1px solid #dee0e3}
+.ui-dot{width:10px;height:10px;border-radius:50%}
+.ui-dot-r{background:#ff5f57}.ui-dot-y{background:#febc2e}.ui-dot-g{background:#28c840}
+.ui-titlebar span{font-size:12px;color:#646a73;margin-left:8px}
+.ui-body{padding:0;display:flex;min-height:520px}
+.ui-sidebar{width:220px;background:#1a1a2e;color:#a0a3bd;padding:16px 0;flex-shrink:0;font-size:13px}
+.ui-sidebar .menu-item{padding:8px 20px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.ui-sidebar .menu-item:hover{background:rgba(255,255,255,.06)}
+.ui-sidebar .menu-item.active{background:rgba(51,112,255,.15);color:#3370ff;border-left:3px solid #3370ff}
+.ui-sidebar .menu-icon{width:16px;text-align:center}
+.ui-main{flex:1;display:flex;flex-direction:column;background:#f7f8fa}
+.ui-header{padding:14px 24px;background:#fff;border-bottom:1px solid #e5e6eb;display:flex;align-items:center;justify-content:space-between}
+.ui-header h3{margin:0;font-size:16px;color:#1f2329}
+.ui-breadcrumb{font-size:12px;color:#8f959e}
+.ui-breadcrumb a{color:#3370ff;text-decoration:none}
+.ui-content{padding:20px 24px;flex:1;overflow-y:auto}
+.ui-btn{display:inline-block;padding:6px 16px;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;border:none}
+.ui-btn-primary{background:#3370ff;color:#fff}
+.ui-btn-default{background:#fff;color:#1f2329;border:1px solid #dee0e3}
+.ui-btn-danger{background:#fff;color:#d32;border:1px solid #fcc}
+.ui-btn-success{background:#d4f5e2;color:#1a7f37;border:1px solid #b8e6c8}
+.ui-card{background:#fff;border-radius:8px;border:1px solid #e5e6eb;padding:16px 20px;margin-bottom:16px}
+.ui-card-title{font-size:14px;font-weight:600;margin-bottom:10px;color:#1f2329;display:flex;align-items:center;gap:6px}
+.ui-form-row{display:flex;gap:16px;margin-bottom:12px;align-items:flex-start}
+.ui-form-group{flex:1}
+.ui-form-label{font-size:12px;color:#646a73;margin-bottom:4px;display:block}
+.ui-form-label .req{color:#d32}
+.ui-input{width:100%;padding:6px 10px;border:1px solid #dee0e3;border-radius:6px;font-size:13px;background:#fff;color:#1f2329}
+.ui-select{width:100%;padding:6px 10px;border:1px solid #dee0e3;border-radius:6px;font-size:13px;background:#fff;color:#1f2329;appearance:auto}
+.ui-checkbox{margin-right:6px}
+.ui-table-mini{width:100%;border-collapse:collapse;font-size:12px;margin:8px 0}
+.ui-table-mini th{background:#f5f6f8;padding:6px 8px;text-align:left;border:1px solid #e5e6eb;font-weight:600;color:#646a73}
+.ui-table-mini td{padding:6px 8px;border:1px solid #e5e6eb}
+.ui-status{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.ui-status-green{background:#52c41a}
+.ui-status-orange{background:#fa8c16}
+.ui-status-red{background:#f5222d}
+.ui-status-blue{background:#3370ff}
+.ui-status-gray{background:#bfbfbf}
+.ui-tabs{display:flex;border-bottom:1px solid #e5e6eb;margin-bottom:16px}
+.ui-tab{padding:8px 16px;font-size:13px;color:#646a73;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
+.ui-tab.active{color:#3370ff;border-bottom-color:#3370ff;font-weight:600}
+.ui-stepper{display:flex;align-items:center;margin:16px 0 24px;gap:0}
+.ui-step{display:flex;align-items:center;gap:8px}
+.ui-step-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.ui-step-circle.done{background:#3370ff;color:#fff}
+.ui-step-circle.current{background:#3370ff;color:#fff;box-shadow:0 0 0 4px rgba(51,112,255,.2)}
+.ui-step-circle.pending{background:#e5e6eb;color:#8f959e}
+.ui-step-label{font-size:12px;white-space:nowrap}
+.ui-step-label.done{color:#3370ff}
+.ui-step-label.current{color:#3370ff;font-weight:600}
+.ui-step-label.pending{color:#8f959e}
+.ui-step-line{width:48px;height:2px;margin:0 4px;flex-shrink:0}
+.ui-step-line.done{background:#3370ff}
+.ui-step-line.pending{background:#e5e6eb}
+.ui-drawer{position:absolute;right:0;top:0;bottom:0;width:420px;background:#fff;border-left:1px solid #e5e6eb;box-shadow:-4px 0 16px rgba(0,0,0,.06);padding:20px;z-index:10;display:flex;flex-direction:column}
+.ui-drawer-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between}
+.ui-timeline{margin:12px 0}
+.ui-timeline-item{display:flex;gap:12px;margin-bottom:0;position:relative;padding-bottom:16px}
+.ui-timeline-item:last-child{padding-bottom:0}
+.ui-timeline-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;z-index:1}
+.ui-timeline-line{position:absolute;left:4px;top:15px;bottom:0;width:2px;background:#e5e6eb}
+.ui-timeline-item:last-child .ui-timeline-line{display:none}
+.ui-timeline-content{flex:1;font-size:13px}
+.ui-timeline-time{font-size:11px;color:#8f959e}
+.ui-badge{display:inline-block;padding:1px 6px;border-radius:3px;font-size:11px;font-weight:500}
+.ui-badge-blue{background:#e8f3ff;color:#3370ff}
+.ui-badge-green{background:#d4f5e2;color:#1a7f37}
+.ui-badge-orange{background:#fff3e0;color:#b86e00}
+.ui-badge-red{background:#fee;color:#d32}
+.ui-badge-gray{background:#f0f2f5;color:#646a73}
+.ui-progress{height:6px;background:#e5e6eb;border-radius:3px;overflow:hidden;margin:4px 0}
+.ui-progress-bar{height:100%;border-radius:3px;background:#3370ff}
+.section-divider{border:none;border-top:1px dashed #dee0e3;margin:32px 0}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>IP Fabric VLAN-RoCE 业务开通</h1>
+<p style="color:#646a73;margin-bottom:4px">方案设计 &amp; UI 设计文档</p>
+<p style="color:#8f959e;font-size:12px">版本 v1.0 &middot; 2026-04-24 &middot; AmpCon Product Team</p>
+
+<hr class="section-divider">
+
+<!-- ==================== 6. 方案设计 ==================== -->
+<h2>6. 方案设计</h2>
+
+<h3>6.1 整体架构设计</h3>
+
+<h4>6.1.1 系统分层架构</h4>
+
+<table>
+<thead><tr><th>层级</th><th>模块</th><th>职责</th></tr></thead>
+<tbody>
+<tr><td style="font-weight:600">展示层</td><td>VLAN 业务开通 UI</td><td>工单表单、向导流程、配置预览、下发进度、验证结果展示</td></tr>
+<tr><td style="font-weight:600">业务编排层</td><td>VLAN Provisioning Engine</td><td>工单状态机、资源预校验、资源预占、配置编排、事务管理、回滚控制</td></tr>
+<tr><td style="font-weight:600">资源管理层</td><td>Resource Manager</td><td>VLAN 池、IP 地址池、端口资源池、VNI 池的分配/回收/锁定</td></tr>
+<tr><td style="font-weight:600">配置适配层</td><td>Device Config Adapter</td><td>将抽象配置意图转换为设备 CLI/NETCONF/gNMI 指令，支持多厂商适配</td></tr>
+<tr><td style="font-weight:600">设备通信层</td><td>Southbound Interface</td><td>SSH/NETCONF/gNMI 通道管理、配置下发、配置回读、连接池</td></tr>
+<tr><td style="font-weight:600">验证层</td><td>Verification Engine</td><td>端口状态验证、VLAN 配置验证、转发验证（Ping/Traceroute）、策略验证</td></tr>
+</tbody>
+</table>
+
+<h4>6.1.2 核心数据模型</h4>
+
+<pre><code>// VLAN 业务开通工单
+interface VlanProvisioningOrder {
+  orderId: string;                    // 工单ID，自动生成 VO-{yyyyMMdd}-{seq}
+  orderName: string;                  // 工单名称
+  fabricId: string;                   // 所属 Fabric ID
+  podId?: string;                     // 所属 POD（可选）
+  status: OrderStatus;                // 工单状态
+  
+  // 业务参数
+  vlanId: number;                     // VLAN ID (2-4094)
+  vlanName?: string;                  // VLAN 名称
+  networkType: 'L2' | 'L3';          // 网络类型：纯二层 / 三层网关
+  gatewayIpv4?: string;              // 三层网关 IPv4 地址（含掩码）
+  gatewayIpv6?: string;              // 三层网关 IPv6 地址（含掩码）
+  vni?: number;                       // VXLAN VNI（跨 Leaf 延伸时必填）
+  vrfName?: string;                   // VRF 实例名（多租户隔离）
+  
+  // 接入配置
+  accessMode: 'single' | 'mlag';     // 接入模式：单归 / MLAG 双归
+  serverAddressMode: 'dhcp-dynamic' | 'dhcp-static' | 'manual';  // 服务器地址分配方式
+  dhcpPoolStart?: string;             // DHCP 地址池起始
+  dhcpPoolEnd?: string;               // DHCP 地址池结束
+  
+  // 高级配置
+  mtu: number;                        // MTU，默认 9216
+  arpProxy: boolean;                  // ARP 代理，默认开启
+  arpDirectRouteAdvertise: boolean;   // ARP 直连路由通告
+  arpAgingTime: number;               // ARP 老化时间（秒），默认 90
+  
+  // RoCE 增强配置
+  roceEnabled: boolean;               // 是否开启 RoCE QoS
+  roceQueue: number;                  // RoCE 流量队列号，默认 3
+  cnpQueue: number;                   // CNP 报文队列号，默认 6
+  pfcEnabled: boolean;                // PFC 开关
+  ecnEnabled: boolean;                // ECN 开关
+  ecnMinThresh: number;               // ECN 最小阈值
+  ecnMaxThresh: number;               // ECN 最大阈值
+  
+  // 下发目标
+  targetDevices: TargetDevice[];      // 目标设备列表
+  
+  // 审计
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// 目标设备
+interface TargetDevice {
+  deviceId: string;
+  deviceName: string;
+  role: 'spine' | 'leaf';
+  ports: TargetPort[];                // 下发端口列表
+  mlagPeerId?: string;               // MLAG 对端设备 ID
+}
+
+// 目标端口
+interface TargetPort {
+  portName: string;                   // 端口名称 如 xe-1/1/3
+  portType: 'uplink' | 'downlink';   // 上联/下联
+  accessVlan?: number;                // Access VLAN
+  trunkVlans?: number[];              // Trunk 允许 VLAN 列表
+}
+
+// 工单状态
+type OrderStatus = 
+  | 'draft'           // 草稿
+  | 'pending_review'  // 待审核
+  | 'validated'       // 校验通过
+  | 'resource_locked' // 资源已锁定
+  | 'deploying'       // 配置下发中
+  | 'verifying'       // 验证中
+  | 'completed'       // 开通完成
+  | 'failed'          // 失败
+  | 'rolled_back';    // 已回滚
+</code></pre>
+
+<h3>6.2 业务开通主流程设计</h3>
+
+<h4>6.2.1 端到端流程</h4>
+
+<div class="flow-box">
+<div class="step"><div class="step-num">1</div><div><strong>工单创建</strong><br>用户选择 Fabric/POD，填写 VLAN ID、网关、接入模式、RoCE 参数，选择目标设备和端口</div></div>
+<div class="arrow">↓</div>
+<div class="step"><div class="step-num">2</div><div><strong>参数校验</strong><br>前端实时校验：VLAN ID 范围(2-4094)、IP 格式、MTU 范围、端口冲突检测<br>后端深度校验：VLAN 是否已被占用、端口是否已分配、IP 是否冲突、VNI 是否重复</div></div>
+<div class="arrow">↓</div>
+<div class="step"><div class="step-num">3</div><div><strong>资源预占</strong><br>对 VLAN ID、端口、IP 地址、VNI 加分布式锁，设置 TTL=30min，超时自动释放</div></div>
+<div class="arrow">↓</div>
+<div class="step"><div class="step-num">4</div><div><strong>配置编排</strong><br>根据业务参数 + 设备角色(Spine/Leaf) + 设备厂商，生成设备级配置指令集<br>
+<span class="tag tag-info">Leaf 下联口</span> VLAN 接入 + Access/Trunk 模式<br>
+<span class="tag tag-info">Leaf</span> VLAN-BD 映射 + SVI 网关 + EVPN 实例 + VNI 绑定<br>
+<span class="tag tag-info">Spine/Leaf 互联口</span> RoCE QoS(PFC + ECN + WRED) — 仅 roceEnabled=true 时<br>
+<span class="tag tag-info">MLAG</span> 双归端口同步配置 — 仅 accessMode=mlag 时
+</div></div>
+<div class="arrow">↓</div>
+<div class="step"><div class="step-num">5</div><div><strong>事务化下发</strong><br>按设备分组，每台设备内按原子事务下发：<br>
+① 接入端口配置 → ② VLAN/BD 配置 → ③ EVPN/VNI 配置 → ④ 网关配置 → ⑤ QoS/RoCE 配置<br>
+每步下发后回读验证，单步失败触发该设备全量回滚</div></div>
+<div class="arrow">↓</div>
+<div class="step"><div class="step-num">6</div><div><strong>业务验证</strong><br>
+<span class="tag tag-success">端口验证</span> 端口 UP/DOWN 状态、VLAN 成员关系<br>
+<span class="tag tag-success">配置验证</span> 回读设备 running-config 与期望配置对比<br>
+<span class="tag tag-success">转发验证</span> 同 VLAN 内 Ping 连通性、跨 Leaf ARP 解析<br>
+<span class="tag tag-success">策略验证</span> PFC/ECN 队列状态、QoS 策略生效确认
+</div></div>
+<div class="arrow">↓</div>
+<div class="step"><div class="step-num">7</div><div><strong>开通完成</strong><br>资源正式锁定，工单状态置为 completed，生成配置快照，记录审计日志</div></div>
+</div>
+
+<h4>6.2.2 配置下发事务模型</h4>
+
+<table>
+<thead><tr><th>下发阶段</th><th>配置内容</th><th>回读验证</th><th>失败策略</th></tr></thead>
+<tbody>
+<tr>
+  <td><span class="tag tag-info">Phase 1</span> 接入端口</td>
+  <td>端口 switchport mode、native-vlan-id、trunk allowed-vlan</td>
+  <td>回读端口 VLAN 配置</td>
+  <td>回滚端口配置</td>
+</tr>
+<tr>
+  <td><span class="tag tag-info">Phase 2</span> VLAN/BD</td>
+  <td>VLAN 创建、BD 绑定、VLAN-BD 映射</td>
+  <td>回读 VLAN 列表</td>
+  <td>删除 VLAN + 回滚 Phase 1</td>
+</tr>
+<tr>
+  <td><span class="tag tag-info">Phase 3</span> EVPN/VNI</td>
+  <td>EVPN 实例创建、VNI 绑定、Route-Target 配置</td>
+  <td>回读 EVPN 实例</td>
+  <td>删除 EVPN 实例 + 回滚 Phase 1-2</td>
+</tr>
+<tr>
+  <td><span class="tag tag-info">Phase 4</span> 网关</td>
+  <td>SVI 接口创建、IP 地址配置、VRF 绑定、ARP 代理</td>
+  <td>回读 SVI 接口</td>
+  <td>删除 SVI + 回滚 Phase 1-3</td>
+</tr>
+<tr>
+  <td><span class="tag tag-info">Phase 5</span> QoS/RoCE</td>
+  <td>PFC Profile、ECN/WRED、Scheduler、Classifier 应用到端口</td>
+  <td>回读 QoS 策略</td>
+  <td>移除 QoS 策略 + 回滚 Phase 1-4</td>
+</tr>
+<tr>
+  <td><span class="tag tag-info">Phase 6</span> DHCP</td>
+  <td>DHCP Server/Relay 配置、地址池、静态绑定</td>
+  <td>回读 DHCP 配置</td>
+  <td>删除 DHCP 配置 + 回滚 Phase 1-5</td>
+</tr>
+</tbody>
+</table>
+
+<h4>6.2.3 RoCE QoS 配置编排逻辑</h4>
+
+<blockquote>
+仅当 <code>roceEnabled = true</code> 时触发，配置范围覆盖 Spine-Leaf 互联口 + Leaf 下联口
+</blockquote>
+
+<table>
+<thead><tr><th>配置项</th><th>Spine 互联口</th><th>Leaf 互联口</th><th>Leaf 下联口</th><th>默认值</th></tr></thead>
+<tbody>
+<tr><td>PFC Profile</td><td>✅ Queue 3,6</td><td>✅ Queue 3,6</td><td>✅ Queue 3,6</td><td>Queue 3=RoCE, Queue 6=CNP</td></tr>
+<tr><td>ECN/WRED</td><td>✅</td><td>✅</td><td>✅</td><td>min=1.5M, max=3.5M, drop=50%</td></tr>
+<tr><td>Scheduler (SP)</td><td>✅</td><td>✅</td><td>✅</td><td>SP 模式，CNP 优先级 > RoCE</td></tr>
+<tr><td>Classifier (DSCP)</td><td>✅</td><td>✅</td><td>✅</td><td>DSCP 26→Q3, DSCP 56→Q6</td></tr>
+<tr><td>MTU</td><td>✅ 9216</td><td>✅ 9216</td><td>✅ 9216</td><td>9216 bytes</td></tr>
+<tr><td>Cut-Through</td><td>✅</td><td>✅</td><td>—</td><td>开启直通转发</td></tr>
+</tbody>
+</table>
+
+<h3>6.3 资源管理设计</h3>
+
+<h4>6.3.1 资源池模型</h4>
+
+<table>
+<thead><tr><th>资源类型</th><th>池范围</th><th>分配策略</th><th>冲突检测</th></tr></thead>
+<tbody>
+<tr><td>VLAN ID</td><td>2-4094（排除 reserved-vlan）</td><td>用户指定 / 自动分配（最小可用）</td><td>Fabric 内唯一</td></tr>
+<tr><td>VNI</td><td>10000-16777215</td><td>自动分配（基于 VLAN ID 映射规则）</td><td>全局唯一</td></tr>
+<tr><td>网关 IP</td><td>用户指定子网</td><td>子网内第一个可用 IP 作为网关</td><td>Fabric 内唯一</td></tr>
+<tr><td>DHCP 地址池</td><td>网关子网内</td><td>排除网关 IP 后的连续地址段</td><td>与已分配 IP 不重叠</td></tr>
+<tr><td>端口</td><td>设备物理端口</td><td>用户选择</td><td>端口未被其他工单占用</td></tr>
+</tbody>
+</table>
+
+<h4>6.3.2 资源生命周期</h4>
+
+<pre><code>空闲(Free) ──申请──→ 预占(Reserved, TTL=30min) ──下发成功──→ 已分配(Allocated)
+                              │                                    │
+                         超时/取消                              工单删除/回滚
+                              │                                    │
+                              ↓                                    ↓
+                         空闲(Free) ←──────────────────────── 空闲(Free)
+</code></pre>
+
+<h3>6.4 配置适配层设计</h3>
+
+<h4>6.4.1 多厂商适配策略</h4>
+
+<table>
+<thead><tr><th>厂商/平台</th><th>南向协议</th><th>配置模板</th><th>回读方式</th></tr></thead>
+<tbody>
+<tr><td>Pica8 (PicOS)</td><td>SSH (set 命令)</td><td>Jinja2 模板 → set CLI</td><td>show running-config 解析</td></tr>
+<tr><td>Edgecore (SONiC)</td><td>gNMI / REST</td><td>OpenConfig YANG → JSON</td><td>gNMI Get</td></tr>
+<tr><td>Celestica (SONiC)</td><td>gNMI / REST</td><td>OpenConfig YANG → JSON</td><td>gNMI Get</td></tr>
+<tr><td>Cumulus (NVUE)</td><td>REST API</td><td>NVUE JSON Patch</td><td>NVUE Get</td></tr>
+<tr><td>通用 (NETCONF)</td><td>NETCONF</td><td>YANG → XML RPC</td><td>NETCONF Get-Config</td></tr>
+</tbody>
+</table>
+
+<h4>6.4.2 PicOS 配置模板示例（Leaf VLAN 接入）</h4>
+
+<pre><code>{# Leaf VLAN 接入配置模板 - PicOS #}
+{# 变量: vlan_id, vlan_name, gateway_ip, prefix_len, ports, roce_enabled #}
+
+{# 1. VLAN 创建 + SVI 网关 #}
+set vlans vlan-id {{ vlan_id }} l3-interface "vlan{{ vlan_id }}"
+set l3-interface vlan-interface vlan{{ vlan_id }} address {{ gateway_ip }} prefix-length {{ prefix_len }}
+
+{# 2. 下联端口 VLAN 接入 #}
+{% for port in ports %}
+set interface gigabit-ethernet {{ port.name }} family ethernet-switching native-vlan-id {{ vlan_id }}
+{% endfor %}
+
+{# 3. ARP 代理（可选） #}
+{% if arp_proxy %}
+set l3-interface vlan-interface vlan{{ vlan_id }} proxy-arp enable true
+{% endif %}
+
+{# 4. RoCE QoS 配置（可选） #}
+{% if roce_enabled %}
+{# QoS 转发类 #}
+set class-of-service forwarding-class roce-data local-priority {{ roce_queue }}
+set class-of-service forwarding-class roce-cnp local-priority {{ cnp_queue }}
+set class-of-service scheduler roce-sched mode "SP"
+set class-of-service scheduler cnp-sched mode "SP"
+set class-of-service classifier roce-cls trust-mode "dscp"
+set class-of-service classifier roce-cls forwarding-class roce-data code-point 26
+set class-of-service classifier roce-cls forwarding-class roce-cnp code-point 56
+
+{# PFC Profile #}
+set class-of-service pfc-profile roce-pfc code-point {{ roce_queue }}
+set class-of-service pfc-profile roce-pfc code-point {{ cnp_queue }}
+{% for q in [0,1,2,4,5,7] %}
+set class-of-service pfc-profile roce-pfc code-point {{ q }} drop true
+{% endfor %}
+
+{# 应用到互联端口 #}
+{% for port in uplink_ports %}
+set class-of-service interface {{ port.name }} pfc-profile "roce-pfc"
+set class-of-service interface {{ port.name }} classifier "roce-cls"
+set class-of-service interface {{ port.name }} scheduler-profile "roce-ss"
+set interface gigabit-ethernet {{ port.name }} mtu 9216
+set interface gigabit-ethernet {{ port.name }} wred queue {{ roce_queue }} min_thresh {{ ecn_min }}
+set interface gigabit-ethernet {{ port.name }} wred queue {{ roce_queue }} max_thresh {{ ecn_max }}
+set interface gigabit-ethernet {{ port.name }} wred queue {{ roce_queue }} drop_probability 50
+set interface gigabit-ethernet {{ port.name }} wred queue {{ roce_queue }} ecn_thresh 1
+set interface gigabit-ethernet {{ port.name }} wred queue {{ roce_queue }} enable true
+{% endfor %}
+{% endif %}
+</code></pre>
+
+<h3>6.5 业务验证设计</h3>
+
+<table>
+<thead><tr><th>验证阶段</th><th>验证项</th><th>验证方法</th><th>通过条件</th><th>超时</th></tr></thead>
+<tbody>
+<tr>
+  <td rowspan="3" style="font-weight:600">端口验证</td>
+  <td>端口 Link 状态</td>
+  <td>show interface status</td>
+  <td>目标端口 Link Up</td>
+  <td>30s</td>
+</tr>
+<tr>
+  <td>VLAN 成员关系</td>
+  <td>show vlan brief</td>
+  <td>端口在目标 VLAN 成员列表中</td>
+  <td>10s</td>
+</tr>
+<tr>
+  <td>Trunk 放行</td>
+  <td>show interface trunk</td>
+  <td>Trunk 端口允许目标 VLAN</td>
+  <td>10s</td>
+</tr>
+<tr>
+  <td rowspan="2" style="font-weight:600">配置验证</td>
+  <td>Running-Config 对比</td>
+  <td>回读 running-config，与期望配置 diff</td>
+  <td>关键配置项 100% 匹配</td>
+  <td>15s</td>
+</tr>
+<tr>
+  <td>EVPN 实例状态</td>
+  <td>show evpn instance</td>
+  <td>VNI 绑定正确，状态 Active</td>
+  <td>15s</td>
+</tr>
+<tr>
+  <td rowspan="2" style="font-weight:600">转发验证</td>
+  <td>同 VLAN Ping</td>
+  <td>从网关 Ping DHCP 分配的首个 IP</td>
+  <td>Ping 成功（≥3/5 包）</td>
+  <td>30s</td>
+</tr>
+<tr>
+  <td>跨 Leaf ARP</td>
+  <td>show arp vlan {id}</td>
+  <td>远端 Leaf 下终端 ARP 可达</td>
+  <td>30s</td>
+</tr>
+<tr>
+  <td rowspan="3" style="font-weight:600">RoCE 验证</td>
+  <td>PFC 队列状态</td>
+  <td>show class-of-service pfc</td>
+  <td>Queue 3,6 PFC 已启用</td>
+  <td>10s</td>
+</tr>
+<tr>
+  <td>ECN 配置</td>
+  <td>show interface wred</td>
+  <td>ECN 阈值与期望一致</td>
+  <td>10s</td>
+</tr>
+<tr>
+  <td>QoS Classifier</td>
+  <td>show class-of-service classifier</td>
+  <td>DSCP 映射关系正确</td>
+  <td>10s</td>
+</tr>
+</tbody>
+</table>
+
+<h3>6.6 异常处理与回滚设计</h3>
+
+<table>
+<thead><tr><th>异常场景</th><th>检测方式</th><th>处理策略</th><th>用户感知</th></tr></thead>
+<tbody>
+<tr><td>VLAN ID 已被占用</td><td>资源预校验阶段</td><td>拒绝提交，提示冲突的工单/设备</td><td>表单错误提示</td></tr>
+<tr><td>端口已被其他 VLAN 占用</td><td>资源预校验阶段</td><td>拒绝提交，提示占用信息</td><td>端口选择器标红</td></tr>
+<tr><td>设备不可达</td><td>配置下发阶段</td><td>标记该设备失败，其他设备继续；支持重试</td><td>设备状态显示"不可达"</td></tr>
+<tr><td>单步配置下发失败</td><td>回读验证不匹配</td><td>该设备全量回滚已下发配置，工单标记"部分失败"</td><td>进度条显示失败步骤</td></tr>
+<tr><td>全量下发失败</td><td>所有设备均失败</td><td>全量回滚，释放预占资源，工单标记"失败"</td><td>工单状态"失败"，可重试</td></tr>
+<tr><td>验证不通过</td><td>业务验证阶段</td><td>保留配置，标记"验证失败"，支持手动重试验证或回滚</td><td>验证结果详情页</td></tr>
+<tr><td>资源预占超时</td><td>TTL 到期</td><td>自动释放预占资源，工单标记"超时"</td><td>工单状态"已过期"</td></tr>
+<tr><td>MLAG 对端配置不一致</td><td>双归配置对比</td><td>告警提示，支持一键同步</td><td>MLAG 一致性告警</td></tr>
+</tbody>
+</table>
+
+<hr class="section-divider">
+
+<!-- ==================== 7. UI 设计 ==================== -->
+<h2>7. UI 设计</h2>
+
+<h3>7.1 页面导航结构</h3>
+
+<pre><code>AmpCon 控制台
+├── DC Fabric
+│   ├── Fabric 管理
+│   ├── 拓扑视图
+│   ├── RoCE 网络                    ← 一级菜单
+│   │   ├── VLAN 接入                ← 本功能入口
+│   │   ├── RoCE QoS 策略
+│   │   └── 端网地址规划
+│   ├── 设备管理
+│   └── 监控告警
+</code></pre>
+
+<h3>7.2 VLAN 接入列表页</h3>
+<p>路径：<code>DC Fabric → RoCE 网络 → VLAN 接入</code></p>
+
+<!-- UI 原型：列表页 -->
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon Fusion Controller — VLAN 接入管理</span>
+</div>
+<div class="ui-body">
+  <!-- 侧边栏 -->
+  <div class="ui-sidebar">
+    <div style="padding:12px 20px 16px;color:#fff;font-size:15px;font-weight:600">AmpCon</div>
+    <div class="menu-item"><span class="menu-icon">📊</span> Dashboard</div>
+    <div class="menu-item"><span class="menu-icon">🌐</span> 拓扑视图</div>
+    <div class="menu-item active"><span class="menu-icon">🔗</span> RoCE 网络</div>
+    <div style="padding:4px 20px 4px 44px;font-size:12px;color:#3370ff;background:rgba(51,112,255,.08)">▸ VLAN 接入</div>
+    <div style="padding:4px 20px 4px 44px;font-size:12px;color:#a0a3bd">　QoS 策略</div>
+    <div style="padding:4px 20px 4px 44px;font-size:12px;color:#a0a3bd">　端网地址规划</div>
+    <div class="menu-item"><span class="menu-icon">📦</span> 设备管理</div>
+    <div class="menu-item"><span class="menu-icon">🔔</span> 监控告警</div>
+    <div class="menu-item"><span class="menu-icon">⚙️</span> 系统设置</div>
+  </div>
+  <!-- 主内容区 -->
+  <div class="ui-main">
+    <div class="ui-header">
+      <div>
+        <div class="ui-breadcrumb"><a>DC Fabric</a> / <a>RoCE 网络</a> / VLAN 接入</div>
+        <h3 style="margin-top:4px">VLAN 接入管理</h3>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ui-btn ui-btn-default">导出</button>
+        <button class="ui-btn ui-btn-primary">+ 新建 VLAN 接入</button>
+      </div>
+    </div>
+    <div class="ui-content">
+      <!-- 筛选栏 -->
+      <div class="ui-card" style="padding:12px 16px">
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:#646a73">Fabric:</span>
+            <select class="ui-select" style="width:160px"><option>全部 Fabric</option><option>AI-Training-Fabric</option><option>Storage-Fabric</option></select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:#646a73">状态:</span>
+            <select class="ui-select" style="width:120px"><option>全部</option><option>已完成</option><option>下发中</option><option>失败</option></select>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:#646a73">VLAN ID:</span>
+            <input class="ui-input" style="width:100px" placeholder="如 100">
+          </div>
+          <button class="ui-btn ui-btn-default" style="padding:5px 12px">🔍 搜索</button>
+        </div>
+      </div>
+      <!-- 列表表格 -->
+      <div class="ui-card" style="padding:0;overflow:hidden">
+        <table class="ui-table-mini" style="margin:0">
+          <thead>
+            <tr>
+              <th style="width:30px"><input type="checkbox"></th>
+              <th>工单ID</th>
+              <th>VLAN ID</th>
+              <th>VLAN 名称</th>
+              <th>Fabric</th>
+              <th>网关地址</th>
+              <th>接入模式</th>
+              <th>RoCE</th>
+              <th>设备数</th>
+              <th>状态</th>
+              <th>创建时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td style="color:#3370ff">VO-20260424-001</td>
+              <td><strong>100</strong></td>
+              <td>AI-Train-GPU</td>
+              <td>AI-Training-Fabric</td>
+              <td>101.1.1.1/24</td>
+              <td><span class="ui-badge ui-badge-blue">MLAG</span></td>
+              <td><span class="ui-badge ui-badge-green">✅ 开启</span></td>
+              <td>4</td>
+              <td><span class="ui-status ui-status-green"></span>已完成</td>
+              <td>2026-04-24 10:30</td>
+              <td><a style="color:#3370ff;font-size:12px;cursor:pointer">详情</a> <a style="color:#646a73;font-size:12px;cursor:pointer;margin-left:6px">删除</a></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td style="color:#3370ff">VO-20260424-002</td>
+              <td><strong>200</strong></td>
+              <td>Storage-RDMA</td>
+              <td>Storage-Fabric</td>
+              <td>102.1.1.1/24</td>
+              <td><span class="ui-badge ui-badge-gray">单归</span></td>
+              <td><span class="ui-badge ui-badge-green">✅ 开启</span></td>
+              <td>2</td>
+              <td><span class="ui-status ui-status-green"></span>已完成</td>
+              <td>2026-04-24 11:15</td>
+              <td><a style="color:#3370ff;font-size:12px;cursor:pointer">详情</a> <a style="color:#646a73;font-size:12px;cursor:pointer;margin-left:6px">删除</a></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td style="color:#3370ff">VO-20260424-003</td>
+              <td><strong>300</strong></td>
+              <td>K8s-Overlay</td>
+              <td>AI-Training-Fabric</td>
+              <td>103.1.1.1/24</td>
+              <td><span class="ui-badge ui-badge-blue">MLAG</span></td>
+              <td><span class="ui-badge ui-badge-gray">— 关闭</span></td>
+              <td>4</td>
+              <td><span class="ui-status ui-status-blue"></span>下发中</td>
+              <td>2026-04-24 14:02</td>
+              <td><a style="color:#3370ff;font-size:12px;cursor:pointer">详情</a> <a style="color:#b86e00;font-size:12px;cursor:pointer;margin-left:6px">取消</a></td>
+            </tr>
+            <tr>
+              <td><input type="checkbox"></td>
+              <td style="color:#3370ff">VO-20260424-004</td>
+              <td><strong>400</strong></td>
+              <td>Mgmt-VLAN</td>
+              <td>Storage-Fabric</td>
+              <td>104.1.1.1/24</td>
+              <td><span class="ui-badge ui-badge-gray">单归</span></td>
+              <td><span class="ui-badge ui-badge-gray">— 关闭</span></td>
+              <td>2</td>
+              <td><span class="ui-status ui-status-red"></span>失败</td>
+              <td>2026-04-24 14:30</td>
+              <td><a style="color:#3370ff;font-size:12px;cursor:pointer">详情</a> <a style="color:#3370ff;font-size:12px;cursor:pointer;margin-left:6px">重试</a> <a style="color:#d32;font-size:12px;cursor:pointer;margin-left:6px">回滚</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;font-size:12px;color:#646a73">
+        <span>共 4 条记录</span>
+        <span>1 / 1 页</span>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<h3>7.3 新建 VLAN 接入 — 向导式表单</h3>
+<p>路径：点击「+ 新建 VLAN 接入」按钮，进入分步向导</p>
+
+<!-- UI 原型：新建向导 Step 1 -->
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon — 新建 VLAN 接入</span>
+</div>
+<div class="ui-body" style="flex-direction:column">
+  <div class="ui-main" style="width:100%">
+    <div class="ui-header">
+      <div>
+        <div class="ui-breadcrumb"><a>RoCE 网络</a> / <a>VLAN 接入</a> / 新建</div>
+        <h3 style="margin-top:4px">新建 VLAN 接入</h3>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ui-btn ui-btn-default">取消</button>
+        <button class="ui-btn ui-btn-default">上一步</button>
+        <button class="ui-btn ui-btn-primary">下一步 →</button>
+      </div>
+    </div>
+    <div class="ui-content">
+      <!-- Stepper -->
+      <div class="ui-stepper">
+        <div class="ui-step"><div class="ui-step-circle current">1</div><span class="ui-step-label current">基本信息</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">2</div><span class="ui-step-label pending">网络配置</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">3</div><span class="ui-step-label pending">RoCE 配置</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">4</div><span class="ui-step-label pending">设备选择</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">5</div><span class="ui-step-label pending">配置预览</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">6</div><span class="ui-step-label pending">下发确认</span></div>
+      </div>
+
+      <!-- Step 1: 基本信息 -->
+      <div class="ui-card">
+        <div class="ui-card-title">📋 基本信息</div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> Fabric</label>
+            <select class="ui-select"><option>请选择 Fabric</option><option selected>AI-Training-Fabric</option><option>Storage-Fabric</option></select>
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">POD</label>
+            <select class="ui-select"><option>默认 POD</option><option>POD-1</option><option>POD-2</option></select>
+          </div>
+        </div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> VLAN ID</label>
+            <input class="ui-input" placeholder="2 - 4094" value="100">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">VLAN 名称</label>
+            <input class="ui-input" placeholder="如 AI-Train-GPU" value="AI-Train-GPU">
+          </div>
+        </div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> 网络类型</label>
+            <select class="ui-select"><option>三层网关（L3）</option><option>纯二层（L2）</option></select>
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> 接入模式</label>
+            <select class="ui-select"><option>MLAG 双归</option><option>单归接入</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-card">
+        <div class="ui-card-title">🌐 网关配置</div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> 网关 IPv4 地址</label>
+            <input class="ui-input" placeholder="如 101.1.1.1/24" value="101.1.1.1/24">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">网关 IPv6 地址</label>
+            <input class="ui-input" placeholder="可选">
+          </div>
+        </div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label">VRF 实例</label>
+            <select class="ui-select"><option>默认 VRF</option><option>VRF-AI-Train</option><option>VRF-Storage</option></select>
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">服务器地址分配方式</label>
+            <select class="ui-select"><option>DHCP 动态分配</option><option>DHCP 静态绑定</option><option>手工配置</option></select>
+          </div>
+        </div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label">DHCP 地址池起始</label>
+            <input class="ui-input" placeholder="如 101.1.1.10" value="101.1.1.10">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">DHCP 地址池结束</label>
+            <input class="ui-input" placeholder="如 101.1.1.200" value="101.1.1.200">
+          </div>
+        </div>
+      </div>
+
+      <div class="ui-card">
+        <div class="ui-card-title">⚙️ 高级配置 <span style="font-size:11px;color:#8f959e;font-weight:400;margin-left:8px">（展开）</span></div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label">MTU</label>
+            <input class="ui-input" value="9216">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">ARP 老化时间（秒）</label>
+            <input class="ui-input" value="90">
+          </div>
+        </div>
+        <div class="ui-form-row">
+          <div class="ui-form-group" style="flex:none">
+            <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" class="ui-checkbox" checked> 使能 ARP 代理
+            </label>
+          </div>
+          <div class="ui-form-group" style="flex:none">
+            <label style="font-size:13px;display:flex;align-items:center;gap:6px;cursor:pointer">
+              <input type="checkbox" class="ui-checkbox" checked> 使能 ARP 直连路由通告
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<h3>7.4 Step 3 — RoCE QoS 配置</h3>
+<p>当用户勾选「开启 RoCE QoS」时展示此配置区域</p>
+
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon — 新建 VLAN 接入 — Step 3: RoCE 配置</span>
+</div>
+<div class="ui-body" style="flex-direction:column">
+  <div class="ui-main" style="width:100%">
+    <div class="ui-header">
+      <div>
+        <div class="ui-breadcrumb"><a>RoCE 网络</a> / <a>VLAN 接入</a> / 新建</div>
+        <h3 style="margin-top:4px">新建 VLAN 接入</h3>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ui-btn ui-btn-default">取消</button>
+        <button class="ui-btn ui-btn-default">← 上一步</button>
+        <button class="ui-btn ui-btn-primary">下一步 →</button>
+      </div>
+    </div>
+    <div class="ui-content">
+      <!-- Stepper -->
+      <div class="ui-stepper">
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">基本信息</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">网络配置</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle current">3</div><span class="ui-step-label current">RoCE 配置</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">4</div><span class="ui-step-label pending">设备选择</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">5</div><span class="ui-step-label pending">配置预览</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">6</div><span class="ui-step-label pending">下发确认</span></div>
+      </div>
+
+      <!-- RoCE 开关 -->
+      <div class="ui-card">
+        <div class="ui-card-title">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px">
+            <input type="checkbox" class="ui-checkbox" checked>
+            <span>🚀 开启 RoCE QoS 配置</span>
+          </label>
+          <span style="font-size:11px;color:#8f959e;font-weight:400;margin-left:auto">开启后将在 Spine-Leaf 互联口和 Leaf 下联口配置 PFC + ECN + QoS 策略</span>
+        </div>
+      </div>
+
+      <!-- PFC 配置 -->
+      <div class="ui-card">
+        <div class="ui-card-title">📊 PFC 无损队列配置</div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> RoCE 流量队列</label>
+            <select class="ui-select"><option selected>Queue 3（推荐）</option><option>Queue 4</option><option>Queue 5</option></select>
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> CNP 报文队列</label>
+            <select class="ui-select"><option selected>Queue 6（推荐）</option><option>Queue 7</option></select>
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> 调度模式</label>
+            <select class="ui-select"><option selected>SP（严格优先级）</option><option>WRR</option><option>SP+WRR</option></select>
+          </div>
+        </div>
+        <blockquote style="font-size:12px;margin-top:8px">
+          ⚠️ CNP 报文队列优先级必须高于 RoCE 队列，避免拥塞时 CNP 报文被丢弃。当前配置：CNP(Q6) > RoCE(Q3) ✅
+        </blockquote>
+        <!-- PFC 队列可视化 -->
+        <div style="margin-top:12px">
+          <div style="font-size:12px;color:#646a73;margin-bottom:6px">PFC 队列启用状态：</div>
+          <div style="display:flex;gap:4px">
+            <div style="flex:1;text-align:center;padding:6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#8f959e">Q0<br>Drop</div>
+            <div style="flex:1;text-align:center;padding:6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#8f959e">Q1<br>Drop</div>
+            <div style="flex:1;text-align:center;padding:6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#8f959e">Q2<br>Drop</div>
+            <div style="flex:1;text-align:center;padding:6px;background:#d4f5e2;border-radius:4px;font-size:11px;color:#1a7f37;font-weight:600;border:2px solid #1a7f37">Q3<br>PFC ✅<br><span style="font-size:10px">RoCE</span></div>
+            <div style="flex:1;text-align:center;padding:6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#8f959e">Q4<br>Drop</div>
+            <div style="flex:1;text-align:center;padding:6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#8f959e">Q5<br>Drop</div>
+            <div style="flex:1;text-align:center;padding:6px;background:#e8f3ff;border-radius:4px;font-size:11px;color:#3370ff;font-weight:600;border:2px solid #3370ff">Q6<br>PFC ✅<br><span style="font-size:10px">CNP</span></div>
+            <div style="flex:1;text-align:center;padding:6px;background:#f5f5f5;border-radius:4px;font-size:11px;color:#8f959e">Q7<br>Drop</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ECN/WRED 配置 -->
+      <div class="ui-card">
+        <div class="ui-card-title">📈 ECN / WRED 拥塞控制</div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> ECN 最小阈值 (bytes)</label>
+            <input class="ui-input" value="1500000">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> ECN 最大阈值 (bytes)</label>
+            <input class="ui-input" value="3500000">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label"><span class="req">*</span> 丢弃概率 (%)</label>
+            <input class="ui-input" value="50">
+          </div>
+        </div>
+        <blockquote style="font-size:12px;margin-top:8px">
+          ⚠️ ECN max_thresh 必须小于 PFC 反压帧触发门限值，确保 ECN 先于 PFC 生效。
+        </blockquote>
+        <!-- DSCP 映射 -->
+        <div style="margin-top:12px">
+          <div style="font-size:12px;color:#646a73;margin-bottom:6px">DSCP → 队列映射关系：</div>
+          <table class="ui-table-mini" style="width:auto">
+            <thead><tr><th>DSCP 值</th><th>含义</th><th>映射队列</th><th>流量类型</th></tr></thead>
+            <tbody>
+              <tr><td><strong>26</strong> (AF31)</td><td>RoCE 数据流量</td><td>Queue 3</td><td><span class="ui-badge ui-badge-green">RoCE Data</span></td></tr>
+              <tr><td><strong>56</strong> (CS7)</td><td>CNP 拥塞通知</td><td>Queue 6</td><td><span class="ui-badge ui-badge-blue">CNP</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Buffer 配置（可选） -->
+      <div class="ui-card">
+        <div class="ui-card-title">💾 Buffer 配置 <span style="font-size:11px;color:#8f959e;font-weight:400">（可选，高级用户）</span></div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label">入方向 Queue 3 Threshold</label>
+            <input class="ui-input" placeholder="默认值">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">入方向 Queue 3 Guaranteed</label>
+            <input class="ui-input" placeholder="默认值">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">入方向 Queue 3 Headroom</label>
+            <input class="ui-input" placeholder="默认值">
+          </div>
+        </div>
+        <div class="ui-form-row">
+          <div class="ui-form-group">
+            <label class="ui-form-label">出方向 Queue 3 Shared Ratio</label>
+            <input class="ui-input" value="100">
+          </div>
+          <div class="ui-form-group">
+            <label class="ui-form-label">出方向 Queue 6 Shared Ratio</label>
+            <input class="ui-input" value="10">
+          </div>
+          <div class="ui-form-group"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<h3>7.5 Step 4 — 设备与端口选择</h3>
+
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon — 新建 VLAN 接入 — Step 4: 设备选择</span>
+</div>
+<div class="ui-body" style="flex-direction:column">
+  <div class="ui-main" style="width:100%">
+    <div class="ui-header">
+      <div>
+        <div class="ui-breadcrumb"><a>RoCE 网络</a> / <a>VLAN 接入</a> / 新建</div>
+        <h3 style="margin-top:4px">新建 VLAN 接入</h3>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ui-btn ui-btn-default">← 上一步</button>
+        <button class="ui-btn ui-btn-primary">下一步 →</button>
+      </div>
+    </div>
+    <div class="ui-content">
+      <div class="ui-stepper">
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">基本信息</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">网络配置</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">RoCE 配置</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle current">4</div><span class="ui-step-label current">设备选择</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">5</div><span class="ui-step-label pending">配置预览</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">6</div><span class="ui-step-label pending">下发确认</span></div>
+      </div>
+
+      <div class="ui-card">
+        <div class="ui-card-title">🖥️ 选择下发设备与端口</div>
+        <p style="font-size:12px;color:#646a73;margin-bottom:12px">从 Fabric「AI-Training-Fabric」中选择需要下发 VLAN 接入配置的 Leaf 设备及下联端口。MLAG 模式下需选择成对的 Leaf 设备。</p>
+
+        <!-- 设备选择表格 -->
+        <table class="ui-table-mini">
+          <thead>
+            <tr>
+              <th style="width:30px"><input type="checkbox" checked></th>
+              <th>设备名称</th>
+              <th>角色</th>
+              <th>管理 IP</th>
+              <th>MLAG 组</th>
+              <th>状态</th>
+              <th>下联端口选择</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#f0f7ff">
+              <td><input type="checkbox" checked></td>
+              <td style="font-weight:600">Leaf-01</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td>10.0.1.3</td>
+              <td><span class="ui-badge ui-badge-orange">MLAG-Group-1</span></td>
+              <td><span class="ui-status ui-status-green"></span>在线</td>
+              <td>
+                <select class="ui-select" style="width:auto" multiple size="2">
+                  <option selected>xe-1/1/3 (空闲)</option>
+                  <option selected>xe-1/1/4 (空闲)</option>
+                  <option>xe-1/1/5 (已占用 VLAN200)</option>
+                </select>
+              </td>
+            </tr>
+            <tr style="background:#f0f7ff">
+              <td><input type="checkbox" checked></td>
+              <td style="font-weight:600">Leaf-02</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td>10.0.1.4</td>
+              <td><span class="ui-badge ui-badge-orange">MLAG-Group-1</span></td>
+              <td><span class="ui-status ui-status-green"></span>在线</td>
+              <td>
+                <select class="ui-select" style="width:auto" multiple size="2">
+                  <option selected>xe-1/1/3 (空闲)</option>
+                  <option selected>xe-1/1/4 (空闲)</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" checked></td>
+              <td style="font-weight:600">Leaf-03</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td>10.0.1.5</td>
+              <td><span class="ui-badge ui-badge-orange">MLAG-Group-2</span></td>
+              <td><span class="ui-status ui-status-green"></span>在线</td>
+              <td>
+                <select class="ui-select" style="width:auto" multiple size="2">
+                  <option selected>xe-1/1/3 (空闲)</option>
+                </select>
+              </td>
+            </tr>
+            <tr>
+              <td><input type="checkbox" checked></td>
+              <td style="font-weight:600">Leaf-04</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td>10.0.1.6</td>
+              <td><span class="ui-badge ui-badge-orange">MLAG-Group-2</span></td>
+              <td><span class="ui-status ui-status-green"></span>在线</td>
+              <td>
+                <select class="ui-select" style="width:auto" multiple size="2">
+                  <option selected>xe-1/1/3 (空闲)</option>
+                </select>
+              </td>
+            </tr>
+            <tr style="opacity:0.5">
+              <td><input type="checkbox" disabled></td>
+              <td>Leaf-05</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td>10.0.1.7</td>
+              <td>—</td>
+              <td><span class="ui-status ui-status-red"></span>离线</td>
+              <td style="color:#8f959e">设备离线，不可选择</td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:8px;font-size:12px;color:#646a73">
+          已选择 <strong style="color:#3370ff">4</strong> 台设备，<strong style="color:#3370ff">6</strong> 个下联端口 · MLAG 组：2 组
+        </div>
+      </div>
+
+      <!-- RoCE QoS 应用范围 -->
+      <div class="ui-card">
+        <div class="ui-card-title">🔗 RoCE QoS 配置应用范围</div>
+        <p style="font-size:12px;color:#646a73;margin-bottom:8px">以下 Spine-Leaf 互联端口将自动应用 RoCE QoS 配置（PFC + ECN + WRED）：</p>
+        <table class="ui-table-mini" style="width:auto">
+          <thead><tr><th>设备</th><th>互联端口</th><th>对端设备</th><th>QoS 策略</th></tr></thead>
+          <tbody>
+            <tr><td>Spine-01</td><td>xe-1/1/1, xe-1/1/2, xe-1/1/3, xe-1/1/4</td><td>Leaf-01~04</td><td><span class="ui-badge ui-badge-green">PFC+ECN</span></td></tr>
+            <tr><td>Spine-02</td><td>xe-1/1/1, xe-1/1/2, xe-1/1/3, xe-1/1/4</td><td>Leaf-01~04</td><td><span class="ui-badge ui-badge-green">PFC+ECN</span></td></tr>
+            <tr><td>Leaf-01</td><td>xe-1/1/1, xe-1/1/2</td><td>Spine-01, Spine-02</td><td><span class="ui-badge ui-badge-green">PFC+ECN</span></td></tr>
+            <tr><td>Leaf-02</td><td>xe-1/1/1, xe-1/1/2</td><td>Spine-01, Spine-02</td><td><span class="ui-badge ui-badge-green">PFC+ECN</span></td></tr>
+            <tr><td>Leaf-03</td><td>xe-1/1/1, xe-1/1/2</td><td>Spine-01, Spine-02</td><td><span class="ui-badge ui-badge-green">PFC+ECN</span></td></tr>
+            <tr><td>Leaf-04</td><td>xe-1/1/1, xe-1/1/2</td><td>Spine-01, Spine-02</td><td><span class="ui-badge ui-badge-green">PFC+ECN</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<h3>7.6 Step 5 — 配置预览</h3>
+<p>下发前展示将要下发到每台设备的完整配置，支持逐设备查看和编辑</p>
+
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon — 新建 VLAN 接入 — Step 5: 配置预览</span>
+</div>
+<div class="ui-body" style="flex-direction:column">
+  <div class="ui-main" style="width:100%">
+    <div class="ui-header">
+      <div><h3>配置预览</h3></div>
+      <div style="display:flex;gap:8px">
+        <button class="ui-btn ui-btn-default">← 上一步</button>
+        <button class="ui-btn ui-btn-primary">确认下发 🚀</button>
+      </div>
+    </div>
+    <div class="ui-content">
+      <div class="ui-stepper">
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">基本信息</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">网络配置</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">RoCE 配置</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle done">✓</div><span class="ui-step-label done">设备选择</span></div>
+        <div class="ui-step-line done"></div>
+        <div class="ui-step"><div class="ui-step-circle current">5</div><span class="ui-step-label current">配置预览</span></div>
+        <div class="ui-step-line pending"></div>
+        <div class="ui-step"><div class="ui-step-circle pending">6</div><span class="ui-step-label pending">下发确认</span></div>
+      </div>
+
+      <!-- 配置摘要 -->
+      <div class="ui-card" style="background:#f7f8fa">
+        <div style="display:flex;gap:32px;font-size:13px">
+          <div><span style="color:#646a73">VLAN:</span> <strong>100</strong> (AI-Train-GPU)</div>
+          <div><span style="color:#646a73">网关:</span> <strong>101.1.1.1/24</strong></div>
+          <div><span style="color:#646a73">接入模式:</span> <span class="ui-badge ui-badge-blue">MLAG</span></div>
+          <div><span style="color:#646a73">RoCE:</span> <span class="ui-badge ui-badge-green">✅ 开启</span></div>
+          <div><span style="color:#646a73">设备:</span> <strong>4 台 Leaf + 2 台 Spine</strong></div>
+        </div>
+      </div>
+
+      <!-- 设备配置 Tab -->
+      <div class="ui-tabs">
+        <div class="ui-tab active">Leaf-01</div>
+        <div class="ui-tab">Leaf-02</div>
+        <div class="ui-tab">Leaf-03</div>
+        <div class="ui-tab">Leaf-04</div>
+        <div class="ui-tab">Spine-01 (QoS)</div>
+        <div class="ui-tab">Spine-02 (QoS)</div>
+      </div>
+
+      <div class="ui-card" style="padding:0">
+        <div style="padding:12px 16px;background:#f7f8fa;border-bottom:1px solid #e5e6eb;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <strong>Leaf-01</strong> <span class="ui-badge ui-badge-blue">Leaf</span> <span style="font-size:12px;color:#646a73;margin-left:8px">10.0.1.3 · PicOS</span>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button class="ui-btn ui-btn-default" style="padding:3px 10px;font-size:11px">📋 复制</button>
+            <button class="ui-btn ui-btn-default" style="padding:3px 10px;font-size:11px">✏️ 编辑</button>
+          </div>
+        </div>
+<pre style="margin:0;border-radius:0;font-size:11px;max-height:280px;overflow-y:auto"><code># ===== Leaf-01 VLAN 接入配置 =====
+# Phase 1: 接入端口
+set interface gigabit-ethernet xe-1/1/3 family ethernet-switching native-vlan-id 100
+set interface gigabit-ethernet xe-1/1/4 family ethernet-switching native-vlan-id 100
+
+# Phase 2: VLAN 创建
+set vlans vlan-id 100 l3-interface "vlan100"
+set vlans reserved-vlan "1010-1020"
+
+# Phase 3: SVI 网关
+set l3-interface vlan-interface vlan100 address 101.1.1.1 prefix-length 24
+set l3-interface vlan-interface vlan100 proxy-arp enable true
+
+# Phase 4: RoCE QoS - 转发类 &amp; 分类器
+set class-of-service forwarding-class roce-data local-priority 3
+set class-of-service forwarding-class roce-cnp local-priority 6
+set class-of-service scheduler roce-sched mode "SP"
+set class-of-service scheduler cnp-sched mode "SP"
+set class-of-service classifier roce-cls trust-mode "dscp"
+set class-of-service classifier roce-cls forwarding-class roce-data code-point 26
+set class-of-service classifier roce-cls forwarding-class roce-cnp code-point 56
+
+# Phase 4: RoCE QoS - PFC Profile
+set class-of-service pfc-profile roce-pfc code-point 0 drop true
+set class-of-service pfc-profile roce-pfc code-point 1 drop true
+set class-of-service pfc-profile roce-pfc code-point 2 drop true
+set class-of-service pfc-profile roce-pfc code-point 3
+set class-of-service pfc-profile roce-pfc code-point 4 drop true
+set class-of-service pfc-profile roce-pfc code-point 5 drop true
+set class-of-service pfc-profile roce-pfc code-point 6
+set class-of-service pfc-profile roce-pfc code-point 7 drop true
+
+# Phase 4: RoCE QoS - 应用到互联端口
+set class-of-service interface xe-1/1/1 pfc-profile "roce-pfc"
+set class-of-service interface xe-1/1/1 classifier "roce-cls"
+set class-of-service interface xe-1/1/2 pfc-profile "roce-pfc"
+set class-of-service interface xe-1/1/2 classifier "roce-cls"
+
+# Phase 4: RoCE QoS - ECN/WRED
+set interface gigabit-ethernet xe-1/1/1 mtu 9216
+set interface gigabit-ethernet xe-1/1/1 wred queue 3 min_thresh 1500000
+set interface gigabit-ethernet xe-1/1/1 wred queue 3 max_thresh 3500000
+set interface gigabit-ethernet xe-1/1/1 wred queue 3 drop_probability 50
+set interface gigabit-ethernet xe-1/1/1 wred queue 3 ecn_thresh 1
+set interface gigabit-ethernet xe-1/1/1 wred queue 3 enable true</code></pre>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<h3>7.7 Step 6 — 下发进度与验证结果</h3>
+<p>点击「确认下发」后进入实时进度页面</p>
+
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon — VLAN 接入下发进度 — VO-20260424-001</span>
+</div>
+<div class="ui-body" style="flex-direction:column">
+  <div class="ui-main" style="width:100%">
+    <div class="ui-header">
+      <div>
+        <h3>下发进度 <span class="ui-badge ui-badge-green" style="margin-left:8px;font-size:12px">✅ 开通完成</span></h3>
+        <div style="font-size:12px;color:#646a73;margin-top:2px">工单 VO-20260424-001 · VLAN 100 · AI-Train-GPU</div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ui-btn ui-btn-default">查看配置快照</button>
+        <button class="ui-btn ui-btn-default">返回列表</button>
+      </div>
+    </div>
+    <div class="ui-content">
+      <!-- 总体进度 -->
+      <div class="ui-card">
+        <div class="ui-card-title">📊 总体进度</div>
+        <div style="display:flex;gap:24px;margin-bottom:12px">
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:#1a7f37">6/6</div>
+            <div style="font-size:11px;color:#646a73">设备完成</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:#1a7f37">30/30</div>
+            <div style="font-size:11px;color:#646a73">配置项完成</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:#1a7f37">10/10</div>
+            <div style="font-size:11px;color:#646a73">验证项通过</div>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:28px;font-weight:700;color:#1f2329">12s</div>
+            <div style="font-size:11px;color:#646a73">总耗时</div>
+          </div>
+        </div>
+        <div class="ui-progress" style="height:8px"><div class="ui-progress-bar" style="width:100%;background:#1a7f37"></div></div>
+      </div>
+
+      <!-- 设备级进度 -->
+      <div class="ui-card">
+        <div class="ui-card-title">🖥️ 设备级下发详情</div>
+        <table class="ui-table-mini">
+          <thead>
+            <tr><th>设备</th><th>角色</th><th>Phase 1<br>端口</th><th>Phase 2<br>VLAN</th><th>Phase 3<br>EVPN</th><th>Phase 4<br>网关</th><th>Phase 5<br>QoS</th><th>Phase 6<br>DHCP</th><th>验证</th><th>耗时</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600">Leaf-01</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">通过</span></td>
+              <td>2.1s</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600">Leaf-02</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">通过</span></td>
+              <td>2.3s</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600">Leaf-03</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">通过</span></td>
+              <td>1.9s</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600">Leaf-04</td>
+              <td><span class="ui-badge ui-badge-blue">Leaf</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-green">通过</span></td>
+              <td>2.0s</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600">Spine-01</td>
+              <td><span class="ui-badge ui-badge-orange">Spine</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-green">通过</span></td>
+              <td>1.5s</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600">Spine-02</td>
+              <td><span class="ui-badge ui-badge-orange">Spine</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-green">✅</span></td>
+              <td><span class="ui-badge ui-badge-gray">—</span></td>
+              <td><span class="ui-badge ui-badge-green">通过</span></td>
+              <td>1.4s</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- 验证结果 -->
+      <div class="ui-card">
+        <div class="ui-card-title">✅ 业务验证结果</div>
+        <table class="ui-table-mini">
+          <thead><tr><th>验证类别</th><th>验证项</th><th>结果</th><th>详情</th></tr></thead>
+          <tbody>
+            <tr><td rowspan="2" style="font-weight:600">端口验证</td><td>端口 Link 状态</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>6/6 端口 Link Up</td></tr>
+            <tr><td>VLAN 成员关系</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>6/6 端口已加入 VLAN 100</td></tr>
+            <tr><td rowspan="2" style="font-weight:600">配置验证</td><td>Running-Config 对比</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>30/30 配置项匹配</td></tr>
+            <tr><td>EVPN 实例状态</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>VNI 10100 Active</td></tr>
+            <tr><td rowspan="2" style="font-weight:600">转发验证</td><td>同 VLAN Ping</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>网关 → 101.1.1.10 延迟 0.3ms</td></tr>
+            <tr><td>跨 Leaf ARP</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>Leaf-01 ↔ Leaf-03 ARP 可达</td></tr>
+            <tr><td rowspan="3" style="font-weight:600">RoCE 验证</td><td>PFC 队列状态</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>Q3,Q6 PFC 已启用（6 台设备）</td></tr>
+            <tr><td>ECN 配置</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>min=1.5M, max=3.5M 一致</td></tr>
+            <tr><td>QoS Classifier</td><td><span class="ui-badge ui-badge-green">✅ 通过</span></td><td>DSCP 26→Q3, 56→Q6 正确</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<hr class="section-divider">
+
+<!-- ==================== 7.8 IP Fabric 配置验证页 ==================== -->
+<h3>7.8 IP Fabric 配置验证页</h3>
+<p>独立的配置验证入口，支持对已开通的 VLAN 业务进行按需验证</p>
+
+<div class="ui-frame">
+<div class="ui-titlebar">
+  <div class="ui-dot ui-dot-r"></div>
+  <div class="ui-dot ui-dot-y"></div>
+  <div class="ui-dot ui-dot-g"></div>
+  <span>AmpCon — IP Fabric 配置验证</span>
+</div>
+<div class="ui-body" style="flex-direction:column">
+  <div class="ui-main" style="width:100%">
+    <div class="ui-header">
+      <div><h3>IP Fabric 配置验证</h3></div>
+      <div><button class="ui-btn ui-btn-primary">🔍 执行全量验证</button></div>
+    </div>
+    <div class="ui-content">
+      <div class="ui-tabs">
+        <div class="ui-tab active">Underlay 验证</div>
+        <div class="ui-tab">Overlay 验证</div>
+        <div class="ui-tab">RoCE QoS 验证</div>
+        <div class="ui-tab">端到端连通性</div>
+      </div>
+
+      <div class="ui-card">
+        <div class="ui-card-title">🔗 Underlay BGP 邻居验证</div>
+        <table class="ui-table-mini">
+          <thead><tr><th>设备</th><th>邻居</th><th>Local AS</th><th>Remote AS</th><th>状态</th><th>Up Time</th><th>收到路由</th></tr></thead>
+          <tbody>
+            <tr><td>Spine-01</td><td>10.1.1.2 (Leaf-01)</td><td>100</td><td>201</td><td><span class="ui-status ui-status-green"></span>Established</td><td>3d 12h</td><td>5</td></tr>
+            <tr><td>Spine-01</td><td>20.1.1.2 (Leaf-02)</td><td>100</td><td>202</td><td><span class="ui-status ui-status-green"></span>Established</td><td>3d 12h</td><td>5</td></tr>
+            <tr><td>Spine-02</td><td>11.1.1.2 (Leaf-01)</td><td>100</td><td>201</td><td><span class="ui-status ui-status-green"></span>Established</td><td>3d 12h</td><td>5</td></tr>
+            <tr><td>Spine-02</td><td>21.1.1.2 (Leaf-02)</td><td>100</td><td>202</td><td><span class="ui-status ui-status-green"></span>Established</td><td>3d 12h</td><td>5</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="ui-card">
+        <div class="ui-card-title">📊 RoCE QoS 运行状态</div>
+        <table class="ui-table-mini">
+          <thead><tr><th>设备</th><th>端口</th><th>PFC Q3</th><th>PFC Q6</th><th>ECN 标记包</th><th>PFC 暂停帧</th><th>队列丢包</th></tr></thead>
+          <tbody>
+            <tr><td>Leaf-01</td><td>xe-1/1/1</td><td><span class="ui-badge ui-badge-green">启用</span></td><td><span class="ui-badge ui-badge-green">启用</span></td><td>1,234</td><td>56</td><td>0</td></tr>
+            <tr><td>Leaf-01</td><td>xe-1/1/2</td><td><span class="ui-badge ui-badge-green">启用</span></td><td><span class="ui-badge ui-badge-green">启用</span></td><td>987</td><td>23</td><td>0</td></tr>
+            <tr><td>Spine-01</td><td>xe-1/1/1</td><td><span class="ui-badge ui-badge-green">启用</span></td><td><span class="ui-badge ui-badge-green">启用</span></td><td>2,345</td><td>89</td><td>0</td></tr>
+            <tr><td>Spine-01</td><td>xe-1/1/2</td><td><span class="ui-badge ui-badge-green">启用</span></td><td><span class="ui-badge ui-badge-green">启用</span></td><td>1,876</td><td>45</td><td>0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<hr class="section-divider">
+
+<h3>7.9 UI 页面清单汇总</h3>
+
+<table>
+<thead><tr><th>页面</th><th>路径</th><th>功能</th><th>优先级</th></tr></thead>
+<tbody>
+<tr><td style="font-weight:600">VLAN 接入列表</td><td>DC Fabric → RoCE 网络 → VLAN 接入</td><td>工单列表、筛选、搜索、状态查看、操作入口</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">新建向导 Step 1</td><td>VLAN 接入 → 新建 → 基本信息</td><td>Fabric/POD 选择、VLAN ID、网络类型、接入模式</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">新建向导 Step 2</td><td>VLAN 接入 → 新建 → 网络配置</td><td>网关、VRF、DHCP、高级配置（MTU/ARP）</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">新建向导 Step 3</td><td>VLAN 接入 → 新建 → RoCE 配置</td><td>PFC 队列、ECN/WRED、DSCP 映射、Buffer</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">新建向导 Step 4</td><td>VLAN 接入 → 新建 → 设备选择</td><td>Leaf 设备选择、端口选择、MLAG 组、QoS 应用范围</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">新建向导 Step 5</td><td>VLAN 接入 → 新建 → 配置预览</td><td>逐设备配置预览、编辑、复制</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">下发进度页</td><td>VLAN 接入 → 工单详情 → 下发进度</td><td>实时进度、设备级 Phase 状态、验证结果</td><td><span class="tag tag-p0">P0</span></td></tr>
+<tr><td style="font-weight:600">IP Fabric 配置验证</td><td>DC Fabric → 配置验证</td><td>Underlay/Overlay/RoCE QoS/连通性验证</td><td><span class="tag tag-p1">P1</span></td></tr>
+<tr><td style="font-weight:600">工单详情页</td><td>VLAN 接入 → 工单详情</td><td>工单信息、配置快照、操作日志、回滚操作</td><td><span class="tag tag-p1">P1</span></td></tr>
+</tbody>
+</table>
+
+</div>
+</body>
+</html>

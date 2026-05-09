@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>AIDC RoCE 网络多租户方案 — 竞争分析报告</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', 'Microsoft YaHei', sans-serif; padding: 24px; background: #fff; color: #1f2329; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 24px; font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #3370ff; }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; }
+  h4 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; }
+  p, li { font-size: 14px; line-height: 1.8; }
+  blockquote { border-left: 3px solid #3370ff; padding: 8px 16px; margin: 12px 0; background: #f7f8fa; color: #646a73; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 24px; font-size: 13px; }
+  th { background: #f0f2f5; font-weight: 600; text-align: center; padding: 8px 10px; border: 1px solid #dee0e3; white-space: nowrap; }
+  td { padding: 6px 10px; border: 1px solid #dee0e3; vertical-align: middle; }
+  .tag-yes { display: inline-block; background: #d4f5e2; color: #1a7f37; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-no { display: inline-block; background: #f5f5f5; color: #8f959e; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-partial { display: inline-block; background: #fff3e0; color: #b86e00; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .tag-exclusive { display: inline-block; background: #fce4ec; color: #c62828; padding: 1px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+  .section-tag { display: inline-block; background: #e8f3ff; color: #3370ff; padding: 2px 10px; border-radius: 4px; font-size: 13px; font-weight: 600; margin-right: 6px; }
+  .legend { margin: 16px 0; padding: 12px 16px; background: #f7f8fa; border-radius: 8px; font-size: 13px; }
+  .legend span { margin-right: 20px; }
+  .highlight-row td { background: #fffbe6; }
+  .strong-cell { font-weight: 600; background: #fafbfc; white-space: nowrap; }
+  ul { padding-left: 20px; }
+  ol { padding-left: 20px; }
+  a { color: #3370ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .meta { color: #646a73; font-size: 13px; margin-bottom: 24px; }
+  .adv { color: #1a7f37; }
+  .disadv { color: #c62828; }
+</style>
+</head>
+<body>
+
+<h1>AIDC RoCE 网络多租户方案 — 竞争分析报告</h1>
+<p class="meta">文档版本：v1.0 &nbsp;|&nbsp; 日期：2026-04-24 &nbsp;|&nbsp; 范围：NVIDIA Spectrum-X / Cisco ACI + Nexus / Arista Etherlink + EOS / H3C AD-AIDC<br>目标读者：产品经理、解决方案架构师、售前工程师</p>
+
+<div class="legend">
+  <span><span class="tag-yes">✅ 支持/强</span></span>
+  <span><span class="tag-partial">🔶 部分支持</span></span>
+  <span><span class="tag-no">— 弱/未支持</span></span>
+  <span><span class="tag-exclusive">专有能力</span></span>
+</div>
+
+<!-- ==================== 1. 背景 ==================== -->
+<h2>1. 背景与分析目的</h2>
+
+<h3>1.1 背景</h3>
+<p>RoCE（RDMA over Converged Ethernet）已成为 AI 数据中心 GPU 集群互联的主流传输协议。随着 GPU 云服务（如 CoreWeave、Lambda）和企业多团队共享 AI 基础设施的需求增长，<strong>RoCE 网络的多租户隔离</strong>成为关键技术需求。</p>
+<p>多租户隔离需要解决两个层面的问题：</p>
+<ul>
+  <li><strong>网络隔离</strong>：不同租户的流量不混、路由不通、策略独立</li>
+  <li><strong>性能隔离</strong>：一个租户的 AI 训练任务不影响另一个租户的网络性能</li>
+</ul>
+
+<h3>1.2 分析目的</h3>
+<p>本文档对比分析四家主流厂商在 RoCE 网络多租户场景下的技术方案、交换机功能依赖、以及各自的优劣势，为产品规划和竞争策略提供参考。</p>
+
+<!-- ==================== 2. 厂商方案 ==================== -->
+<h2>2. 厂商方案详述</h2>
+
+<!-- 2.1 NVIDIA -->
+<h3><span class="section-tag">NVIDIA</span> 2.1 Spectrum-X</h3>
+
+<h4>2.1.1 核心架构</h4>
+<p>Spectrum-X 是端到端方案，由两个硬件组件协同工作，缺一不可：</p>
+<table>
+<thead><tr><th>组件</th><th>型号</th><th>角色</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">交换机</td><td>Spectrum-4（51.2Tbps ASIC）</td><td>转发面、遥测采集、自适应路由</td></tr>
+<tr><td class="strong-cell">智能网卡</td><td>BlueField-3 SuperNIC</td><td>端侧拥塞控制、包重排序、QP 管理</td></tr>
+</tbody>
+</table>
+
+<h4>2.1.2 多租户隔离机制</h4>
+<p><strong>（1）网络隔离 — VRF + L3VNI</strong></p>
+<p>每个租户分配独立的 VRF 实例和 L3VNI，拥有独立路由表：</p>
+<table>
+<thead><tr><th>租户</th><th>VRF</th><th>L3VNI</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>租户 A</td><td>VRF-A</td><td>50001</td><td>GPU 训练集群 A</td></tr>
+<tr><td>租户 B</td><td>VRF-B</td><td>50002</td><td>GPU 训练集群 B</td></tr>
+<tr><td>租户 C</td><td>VRF-C</td><td>50003</td><td>推理业务</td></tr>
+</tbody>
+</table>
+<ul>
+  <li>基于标准 VXLAN BGP EVPN 控制面</li>
+  <li>GPU 服务器通过 BlueField-3 SuperNIC 接入对应 VRF</li>
+</ul>
+
+<p><strong>（2）性能隔离 — Spectrum-X 核心差异化</strong></p>
+<p>性能隔离由三个子机制组合实现：</p>
+<table>
+<thead><tr><th style="min-width:140px">机制</th><th>工作原理</th><th>交换机侧</th><th>SuperNIC 侧</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">QoS 隔离</td><td>不同租户/任务分配不同 DSCP 标记和队列，每队列独立带宽保障和缓冲区</td><td>细粒度多队列调度、per-queue 缓冲区管理</td><td>DSCP 标记</td></tr>
+<tr class="highlight-row"><td class="strong-cell">RoCE 自适应路由（AR）</td><td>逐包选择最不拥塞的出端口转发，基于出端口队列深度实时决策</td><td><span class="tag-exclusive">专有</span> 逐包负载均衡、实时队列深度感知、邻居拥塞通知</td><td>接收端包重排序（乱序恢复）</td></tr>
+<tr class="highlight-row"><td class="strong-cell">RoCE 拥塞控制（CC）</td><td>交换机嵌入带内遥测（INT），SuperNIC 执行拥塞控制算法动态调速</td><td><span class="tag-exclusive">专有</span> 带内遥测采集、遥测优先传输通道</td><td>硬件执行 CC 算法，微秒级反应</td></tr>
+</tbody>
+</table>
+<blockquote><strong>关键创新</strong>：遥测数据可绕过拥塞队列传输，避免"拥塞信号本身被拥塞延迟"。</blockquote>
+
+<p><strong>（3）可观测性 — NetQ</strong></p>
+<ul>
+  <li>交换机 + SuperNIC 双向遥测数据采集</li>
+  <li>Per-flow 路径追踪和延迟分析</li>
+  <li>按租户维度的网络健康状态视图</li>
+</ul>
+
+<h4>2.1.3 对交换机功能的依赖</h4>
+<table>
+<thead><tr><th style="min-width:180px">交换机能力</th><th>用途</th><th>是否 Spectrum-4 专有</th></tr></thead>
+<tbody>
+<tr><td>VXLAN 封装/解封装</td><td>VRF + L3VNI 租户隔离</td><td>否，通用能力</td></tr>
+<tr><td>BGP EVPN 控制面</td><td>Overlay 网络控制</td><td>否，通用能力</td></tr>
+<tr><td>多 VRF 实例</td><td>路由隔离</td><td>否，通用能力</td></tr>
+<tr><td>细粒度多队列 QoS</td><td>带宽/缓冲区隔离</td><td>否，但精细度有差异</td></tr>
+<tr><td>PFC</td><td>无损以太网</td><td>否，通用能力</td></tr>
+<tr><td>ECN</td><td>拥塞标记</td><td>否，通用能力</td></tr>
+<tr class="highlight-row"><td><strong>逐包自适应路由</strong></td><td><strong>避免拥塞热点</strong></td><td><span class="tag-exclusive">是，Spectrum-4 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>带内遥测 + 优先遥测通道</strong></td><td><strong>实时拥塞感知</strong></td><td><span class="tag-exclusive">是，Spectrum-4 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>邻居拥塞状态通知</strong></td><td><strong>跨交换机负载均衡</strong></td><td><span class="tag-exclusive">是，Spectrum-4 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>与 SuperNIC 协同协议</strong></td><td><strong>端到端性能隔离</strong></td><td><span class="tag-exclusive">是，Spectrum-X 专有</span></td></tr>
+</tbody>
+</table>
+
+<!-- 2.2 Cisco -->
+<h3><span class="section-tag">Cisco</span> 2.2 ACI + Nexus</h3>
+
+<h4>2.2.1 核心架构</h4>
+<p>Cisco 提供两条技术路线，可组合使用：</p>
+<table>
+<thead><tr><th>模式</th><th>控制器</th><th>交换机固件</th><th>多租户能力</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">ACI 模式</td><td>APIC（3 节点集群）</td><td>ACI 专用固件</td><td>最完整（Tenant/VRF/BD/EPG/Contract）</td></tr>
+<tr><td class="strong-cell">NX-OS 模式</td><td>NDFC</td><td>标准 NX-OS</td><td>标准（VRF + L3VNI）</td></tr>
+</tbody>
+</table>
+
+<h4>2.2.2 多租户隔离机制</h4>
+<p><strong>（1）ACI 模式 — 最完整的多租户策略模型</strong></p>
+<table>
+<thead><tr><th>层级</th><th>对象</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td>第 1 层</td><td class="strong-cell">Tenant（租户）</td><td>最顶层隔离单元，独立策略空间</td></tr>
+<tr><td>第 2 层</td><td class="strong-cell">VRF</td><td>三层路由隔离，关联 L3VNI</td></tr>
+<tr><td>第 3 层</td><td class="strong-cell">Bridge Domain（BD）</td><td>二层广播域，关联 L2VNI</td></tr>
+<tr><td>第 4 层</td><td class="strong-cell">Application Profile</td><td>应用画像，逻辑分组</td></tr>
+<tr><td>第 5 层</td><td class="strong-cell">EPG（Endpoint Group）</td><td>端点分组，GPU 服务器按 EPG 归类</td></tr>
+<tr class="highlight-row"><td>策略层</td><td class="strong-cell">Contract</td><td>白名单策略，默认 EPG 间不通，需显式放行</td></tr>
+</tbody>
+</table>
+
+<p><strong>（2）NX-OS VXLAN EVPN 模式 — 标准多租户</strong></p>
+<table>
+<thead><tr><th>租户</th><th>VRF</th><th>L3VNI</th><th>L2VNI（计算网段）</th><th>L2VNI（存储网段）</th></tr></thead>
+<tbody>
+<tr><td>租户 A</td><td>VRF-A</td><td>50001</td><td>30001</td><td>30002</td></tr>
+<tr><td>租户 B</td><td>VRF-B</td><td>50002</td><td>30003</td><td>30004</td></tr>
+</tbody>
+</table>
+
+<p><strong>（3）RoCE 无损网络 — QoS 机制栈</strong></p>
+<table>
+<thead><tr><th style="min-width:160px">机制</th><th>工作原理</th><th>交换机依赖</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">PFC</td><td>基于 802.1Qbb，对特定优先级流量逐跳反压防丢包</td><td>per-priority PFC + PFC Watchdog</td></tr>
+<tr><td class="strong-cell">ECN</td><td>队列深度超阈值时标记 ECN 位，通知端侧降速</td><td>WRED + ECN 标记</td></tr>
+<tr><td class="strong-cell">PFC + ECN 组合</td><td>ECN 软着陆 + PFC 硬刹车</td><td>缓冲区需足够大</td></tr>
+<tr class="highlight-row"><td class="strong-cell">AFD（Approximate Fair Drop）</td><td>多租户共享队列时确保每个流获得公平缓冲区份额</td><td><span class="tag-exclusive">Nexus 9000 ASIC 专有</span></td></tr>
+<tr><td class="strong-cell">VXLAN QoS 穿透</td><td>VXLAN 封装时外层 IP 头正确复制内层 DSCP 值</td><td>DSCP copy 能力</td></tr>
+</tbody>
+</table>
+
+<h4>2.2.3 对交换机功能的依赖</h4>
+<table>
+<thead><tr><th style="min-width:200px">交换机能力</th><th>用途</th><th>是否 Cisco 专有</th></tr></thead>
+<tbody>
+<tr><td>VXLAN 封装/解封装</td><td>Overlay 网络</td><td>否，通用能力</td></tr>
+<tr><td>BGP EVPN 控制面</td><td>Overlay 控制</td><td>否，通用能力</td></tr>
+<tr><td>多 VRF + L3VNI</td><td>三层租户隔离</td><td>否，通用能力</td></tr>
+<tr><td>L2VNI + Bridge Domain</td><td>二层租户隔离</td><td>BD 是 ACI 概念</td></tr>
+<tr><td>PFC + PFC Watchdog</td><td>无损以太网</td><td>否，通用能力</td></tr>
+<tr><td>ECN + WRED</td><td>拥塞标记</td><td>否，通用能力</td></tr>
+<tr><td>DSCP QoS 映射</td><td>流量分类</td><td>否，通用能力</td></tr>
+<tr><td>VXLAN QoS 穿透（DSCP copy）</td><td>隧道中保持 QoS</td><td>部分交换机不支持</td></tr>
+<tr class="highlight-row"><td><strong>ACI 策略 TCAM</strong></td><td><strong>Contract 白名单策略硬件执行</strong></td><td><span class="tag-exclusive">是，ACI 模式专有</span></td></tr>
+<tr class="highlight-row"><td><strong>AFD（Approximate Fair Drop）</strong></td><td><strong>多租户公平缓冲区分配</strong></td><td><span class="tag-exclusive">是，Nexus 9000 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>APIC 意图驱动编排</strong></td><td><strong>自动化策略下发</strong></td><td><span class="tag-exclusive">是，ACI 专有</span></td></tr>
+</tbody>
+</table>
+
+<!-- 2.3 Arista -->
+<h3><span class="section-tag">Arista</span> 2.3 Etherlink + EOS</h3>
+
+<h4>2.3.1 核心架构</h4>
+<table>
+<thead><tr><th>组件</th><th>型号/平台</th><th>角色</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">AI Leaf 交换机</td><td>7060X6（Broadcom Tomahawk 5，51.2Tbps）</td><td>接入层，浅缓冲</td></tr>
+<tr><td class="strong-cell">AI Spine 交换机</td><td>7800R4（Broadcom Jericho3-AI）</td><td>汇聚层，VOQ + 深缓冲</td></tr>
+<tr><td class="strong-cell">分布式交换</td><td>7700R4 DES（Jericho3-AI，调度式 Fabric）</td><td>超大规模集群</td></tr>
+<tr><td class="strong-cell">操作系统</td><td>EOS Smart AI Suite</td><td>AI 优化软件功能集</td></tr>
+<tr><td class="strong-cell">编排平台</td><td>CloudVision + AVD</td><td>网络编排与可观测性</td></tr>
+</tbody>
+</table>
+<p>Arista 使用 <strong>Broadcom 芯片</strong>（非自研 ASIC），不强制绑定特定网卡品牌。</p>
+
+<h4>2.3.2 多租户隔离机制</h4>
+<p><strong>（1）网络隔离 — VXLAN EVPN + VRF</strong></p>
+<p>标准 VXLAN BGP EVPN 方案，通过 AVD 框架提供标准化多租户部署模板。</p>
+
+<p><strong>（2）性能隔离 — 硬件架构驱动</strong></p>
+<table>
+<thead><tr><th style="min-width:180px">机制</th><th>工作原理</th><th>平台要求</th></tr></thead>
+<tbody>
+<tr class="highlight-row"><td class="strong-cell">VOQ（虚拟输出队列）</td><td>每个入端口为每个出端口维护独立队列，从根本上消除队头阻塞。一个租户的拥塞不会阻塞其他租户到不同出端口的流量</td><td><span class="tag-exclusive">仅 R 系列（Jericho ASIC）</span></td></tr>
+<tr class="highlight-row"><td class="strong-cell">Deep Buffer（深缓冲）</td><td>GB 级缓冲区吸收 AI 训练微突发流量，降低 PFC 触发概率</td><td><span class="tag-exclusive">仅 R 系列</span></td></tr>
+<tr class="highlight-row"><td class="strong-cell">Cluster Load Balancing（CLB）</td><td>基于 RDMA Queue Pair（QP）级别的负载均衡，比传统 per-flow ECMP 粒度更细。可与第三方 SmartNIC 集成</td><td><span class="tag-exclusive">7060X6 + 7800R4（EOS 2025 新功能）</span></td></tr>
+<tr><td class="strong-cell">PFC + ECN + DCQCN</td><td>标准无损以太网 QoS 栈</td><td>全系列 Etherlink</td></tr>
+</tbody>
+</table>
+
+<p><strong>（3）7700R4 DES — 超大规模特殊方案</strong></p>
+<table>
+<thead><tr><th>特性</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">架构</td><td>多个物理交换机组合为一个逻辑交换机</td></tr>
+<tr><td class="strong-cell">调度方式</td><td>调度式 Fabric（Scheduled Fabric），无拥塞流量喷洒</td></tr>
+<tr><td class="strong-cell">负载均衡</td><td>逐包调度，不依赖 ECMP</td></tr>
+<tr><td class="strong-cell">性能隔离</td><td>DES 内部天然无拥塞，性能隔离效果好</td></tr>
+<tr><td class="strong-cell">部署案例</td><td>Meta 已部署用于大规模 AI 集群</td></tr>
+</tbody>
+</table>
+
+<p><strong>（4）安全隔离 — MSS（Multi-Domain Segmentation Services）</strong></p>
+<ul>
+  <li>基于端点身份（而非 IP/VLAN）的微分段</li>
+  <li>可在 VRF 内部进一步细分安全域</li>
+  <li>与 CloudVision 集成，提供零信任网络访问</li>
+</ul>
+
+<h4>2.3.3 对交换机功能的依赖</h4>
+<table>
+<thead><tr><th style="min-width:200px">交换机能力</th><th>用途</th><th>平台支持</th></tr></thead>
+<tbody>
+<tr><td>VXLAN 封装/解封装</td><td>Overlay 网络</td><td>全系列</td></tr>
+<tr><td>BGP EVPN 控制面</td><td>Overlay 控制</td><td>全系列</td></tr>
+<tr><td>多 VRF + L3VNI</td><td>三层租户隔离</td><td>全系列</td></tr>
+<tr><td>PFC + ECN + DCQCN</td><td>无损以太网</td><td>全系列 Etherlink</td></tr>
+<tr><td>DSCP QoS 映射</td><td>流量分类</td><td>全系列</td></tr>
+<tr class="highlight-row"><td><strong>VOQ（虚拟输出队列）</strong></td><td><strong>消除队头阻塞，天然性能隔离</strong></td><td><span class="tag-exclusive">仅 R 系列（Jericho ASIC）</span></td></tr>
+<tr class="highlight-row"><td><strong>Deep Buffer（GB 级缓冲）</strong></td><td><strong>吸收微突发，减少 PFC 风暴</strong></td><td><span class="tag-exclusive">仅 R 系列</span></td></tr>
+<tr class="highlight-row"><td><strong>Cluster Load Balancing</strong></td><td><strong>RDMA QP 级负载均衡</strong></td><td><span class="tag-exclusive">7060X6 + 7800R4</span></td></tr>
+<tr class="highlight-row"><td><strong>DES 调度式 Fabric</strong></td><td><strong>无拥塞流量喷洒</strong></td><td><span class="tag-exclusive">仅 7700R4 DES</span></td></tr>
+<tr><td>MSS 微分段</td><td>安全隔离</td><td>全系列（EOS 功能）</td></tr>
+</tbody>
+</table>
+
+<!-- 2.4 H3C -->
+<h3><span class="section-tag">H3C</span> 2.4 AD-AIDC</h3>
+
+<h4>2.4.1 核心架构</h4>
+<table>
+<thead><tr><th>组件</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">控制器</td><td>AD-AIDC 控制器</td></tr>
+<tr><td class="strong-cell">管理模块</td><td>RoCE 网络模块（资源隔离、VLAN 接入、VXLAN 接入、虚拟链路层网络、虚拟路由器、虚拟端口、虚拟路由器连接）</td></tr>
+<tr><td class="strong-cell">交换机</td><td>H3C 数据中心交换机系列</td></tr>
+</tbody>
+</table>
+
+<h4>2.4.2 多租户隔离机制</h4>
+<p><strong>（1）资源隔离 — Fabric 级网络资源分区</strong></p>
+<table>
+<thead><tr><th>字段</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">资源隔离名称</td><td>隔离域标识</td></tr>
+<tr><td class="strong-cell">已编排网络数量</td><td>该域内的网络实例数</td></tr>
+<tr><td class="strong-cell">资源隔离管理 IP</td><td>管理面地址</td></tr>
+<tr><td class="strong-cell">Fabric（类型）</td><td>关联的物理 Fabric</td></tr>
+<tr><td class="strong-cell">POD</td><td>关联的 POD</td></tr>
+<tr><td class="strong-cell">租户</td><td>归属租户</td></tr>
+</tbody>
+</table>
+
+<p><strong>（2）网段规划 — IP 资源预分配</strong></p>
+<table>
+<thead><tr><th>Fabric</th><th>骨干网段</th><th>端口数</th><th>存储客户端网段</th><th>端口数</th><th>分配方式</th></tr></thead>
+<tbody>
+<tr><td>fabric_test</td><td>1 个</td><td>24</td><td>1 个</td><td>0</td><td>自动 DHCP</td></tr>
+<tr><td>fabric</td><td>1 个</td><td>24</td><td>1 个</td><td>27</td><td>自动 DHCP</td></tr>
+</tbody>
+</table>
+
+<p><strong>（3）网络虚拟化层次</strong></p>
+<table>
+<thead><tr><th>层级</th><th>模块</th><th>作用</th></tr></thead>
+<tbody>
+<tr><td>接入层</td><td class="strong-cell">VLAN 接入 / VXLAN 接入</td><td>二层接入方式（Underlay / Overlay）</td></tr>
+<tr><td>端口层</td><td class="strong-cell">虚拟端口</td><td>物理端口虚拟化封装</td></tr>
+<tr><td>二层</td><td class="strong-cell">虚拟链路层网络</td><td>统一 VLAN/VXLAN 的二层抽象（VLAN-Network、PVLAN 模型）</td></tr>
+<tr><td>三层</td><td class="strong-cell">虚拟路由器</td><td>三层路由虚拟化（类似 VRF）</td></tr>
+<tr><td>互联层</td><td class="strong-cell">虚拟路由器连接</td><td>跨域路由互联</td></tr>
+<tr><td>隔离层</td><td class="strong-cell">资源隔离</td><td>最顶层 Fabric 级资源分区</td></tr>
+</tbody>
+</table>
+
+<h4>2.4.3 对交换机功能的依赖</h4>
+<table>
+<thead><tr><th style="min-width:160px">交换机能力</th><th>用途</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>VLAN / VXLAN</td><td>二层接入与隔离</td><td>标准能力</td></tr>
+<tr><td>VRF</td><td>三层路由隔离</td><td>标准能力</td></tr>
+<tr><td>PFC + ECN</td><td>无损以太网</td><td>标准能力</td></tr>
+<tr><td>QoS / DSCP</td><td>流量分类与优先级</td><td>标准能力</td></tr>
+<tr><td>PVLAN</td><td>细粒度二层隔离</td><td>标准能力</td></tr>
+<tr><td>控制器南向接口</td><td>策略自动下发</td><td>H3C 自有协议</td></tr>
+</tbody>
+</table>
+<blockquote>H3C AD-AIDC 的公开技术文档较少，以上分析基于控制器 UI 截图和产品页面信息。</blockquote>
+
+<!-- ==================== 3. 综合对比 ==================== -->
+<h2>3. 综合对比</h2>
+
+<h3>3.1 多租户能力矩阵</h3>
+<table>
+<thead><tr><th style="min-width:180px">能力维度</th><th>NVIDIA Spectrum-X</th><th>Cisco ACI + Nexus</th><th>Arista Etherlink + EOS</th><th>H3C AD-AIDC</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">网络隔离（VRF + VNI）</td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td></tr>
+<tr><td class="strong-cell">二层隔离（VLAN/VXLAN）</td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅ + Bridge Domain</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅ + PVLAN</span></td></tr>
+<tr><td class="strong-cell">策略隔离（白名单/ACL）</td><td><span class="tag-no">— 基础 QoS</span></td><td><span class="tag-yes">✅ EPG + Contract</span></td><td><span class="tag-partial">🔶 MSS 微分段</span></td><td><span class="tag-no">— 基础 ACL</span></td></tr>
+<tr><td class="strong-cell">性能隔离 — 负载均衡</td><td><span class="tag-yes">✅ 逐包自适应路由</span></td><td><span class="tag-no">— per-flow ECMP</span></td><td><span class="tag-partial">🔶 RDMA QP 级 CLB</span></td><td><span class="tag-no">— per-flow ECMP</span></td></tr>
+<tr><td class="strong-cell">性能隔离 — 拥塞控制</td><td><span class="tag-yes">✅ 硬件级端到端 CC</span></td><td><span class="tag-partial">🔶 PFC+ECN+AFD</span></td><td><span class="tag-partial">🔶 PFC+ECN+DCQCN</span></td><td><span class="tag-partial">🔶 PFC+ECN</span></td></tr>
+<tr><td class="strong-cell">性能隔离 — 缓冲区架构</td><td>共享缓冲</td><td>共享缓冲</td><td><span class="tag-yes">✅ VOQ + 深缓冲（R 系列）</span></td><td>共享缓冲</td></tr>
+<tr><td class="strong-cell">租户级可观测性</td><td><span class="tag-yes">✅ NetQ 流遥测</span></td><td><span class="tag-yes">✅ ND Insights</span></td><td><span class="tag-yes">✅ AI Analyzer</span></td><td><span class="tag-partial">🔶 基础监控</span></td></tr>
+<tr><td class="strong-cell">控制器自动化编排</td><td><span class="tag-partial">🔶 Cumulus/SONiC</span></td><td><span class="tag-yes">✅ APIC / NDFC</span></td><td><span class="tag-yes">✅ CloudVision</span></td><td><span class="tag-yes">✅ AD-AIDC</span></td></tr>
+</tbody>
+</table>
+
+<h3>3.2 交换机功能依赖对比</h3>
+<table>
+<thead><tr><th style="min-width:200px">交换机能力</th><th>NVIDIA</th><th>Cisco</th><th>Arista</th><th>H3C</th><th>通用性</th></tr></thead>
+<tbody>
+<tr><td>VXLAN + BGP EVPN</td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td>通用</td></tr>
+<tr><td>多 VRF + L3VNI</td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td>通用</td></tr>
+<tr><td>PFC + ECN</td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td>通用</td></tr>
+<tr><td>DSCP QoS 映射</td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-yes">✅</span></td><td>通用</td></tr>
+<tr class="highlight-row"><td><strong>逐包自适应路由</strong></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">Spectrum-4 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>带内遥测 + 优先通道</strong></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">Spectrum-4 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>交换机-网卡协同协议</strong></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">Spectrum-X 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>ACI 策略 TCAM</strong></td><td><span class="tag-no">❌</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">ACI 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>AFD 公平缓冲区</strong></td><td><span class="tag-no">❌</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">Nexus 9000 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>VOQ 虚拟输出队列</strong></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">Jericho ASIC（R 系列）</span></td></tr>
+<tr class="highlight-row"><td><strong>GB 级深缓冲</strong></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">Jericho ASIC（R 系列）</span></td></tr>
+<tr class="highlight-row"><td><strong>DES 调度式 Fabric</strong></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">7700R4 专有</span></td></tr>
+<tr class="highlight-row"><td><strong>RDMA QP 级 CLB</strong></td><td><span class="tag-no">❌</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-yes">✅</span></td><td><span class="tag-no">❌</span></td><td><span class="tag-exclusive">EOS 2025 新功能</span></td></tr>
+</tbody>
+</table>
+
+<h3>3.3 架构与生态对比</h3>
+<table>
+<thead><tr><th style="min-width:140px">维度</th><th>NVIDIA Spectrum-X</th><th>Cisco ACI + Nexus</th><th>Arista Etherlink + EOS</th><th>H3C AD-AIDC</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">芯片来源</td><td>自研 Spectrum-4</td><td>Broadcom + 部分自研</td><td>Broadcom（TH5 + J3AI）</td><td>自研/合作</td></tr>
+<tr><td class="strong-cell">是否强制专用网卡</td><td><span class="tag-exclusive">是（BlueField-3）</span></td><td>否</td><td>否（可选 SmartNIC）</td><td>否</td></tr>
+<tr><td class="strong-cell">控制器</td><td>Cumulus/SONiC + NetQ</td><td>APIC / NDFC</td><td>CloudVision + AVD</td><td>AD-AIDC</td></tr>
+<tr><td class="strong-cell">操作系统</td><td>Cumulus Linux / SONiC</td><td>ACI 固件 / NX-OS</td><td>EOS</td><td>Comware</td></tr>
+<tr><td class="strong-cell">最大集群规模</td><td>数万 XPU</td><td>数千-数万 XPU</td><td><span class="tag-yes">10 万+ XPU（DES）</span></td><td>数千 XPU</td></tr>
+<tr><td class="strong-cell">厂商锁定程度</td><td><span class="tag-exclusive">高（交换机+网卡）</span></td><td><span class="tag-partial">中（交换机锁定）</span></td><td><span class="tag-yes">低（Broadcom 芯片）</span></td><td><span class="tag-exclusive">高（自有生态）</span></td></tr>
+<tr><td class="strong-cell">开放性</td><td><span class="tag-partial">中（SONiC 可选）</span></td><td><span class="tag-partial">中（NX-OS 较开放）</span></td><td><span class="tag-yes">高（标准协议+API）</span></td><td><span class="tag-no">低（封闭生态）</span></td></tr>
+<tr><td class="strong-cell">超大规模客户</td><td>CoreWeave、Lambda</td><td>Cisco 自用</td><td>Meta、Microsoft</td><td>国内运营商/企业</td></tr>
+</tbody>
+</table>
+
+<!-- ==================== 4. 竞争优劣势 ==================== -->
+<h2>4. 竞争优劣势分析</h2>
+
+<h3><span class="section-tag">NVIDIA</span> 4.1 Spectrum-X</h3>
+<table>
+<thead><tr><th style="width:50%"><span class="adv">✅ 优势</span></th><th style="width:50%"><span class="disadv">⚠ 劣势</span></th></tr></thead>
+<tbody>
+<tr><td>性能隔离最极致（逐包 AR + 硬件 CC）</td><td>生态最封闭（交换机 + 网卡全套 NVIDIA）</td></tr>
+<tr><td>端到端优化，95% 有效带宽</td><td>成本高（SuperNIC 额外成本）</td></tr>
+<tr><td>专为 NCCL 优化，AI 训练性能最佳</td><td>多租户策略模型简单（仅 VRF 级）</td></tr>
+<tr><td>GPU 云服务商首选</td><td>不适合混合负载数据中心</td></tr>
+</tbody>
+</table>
+<blockquote><strong>最佳场景</strong>：GPU 云服务商（卖算力给多租户）、纯 AI 训练集群</blockquote>
+
+<h3><span class="section-tag">Cisco</span> 4.2 ACI + Nexus</h3>
+<table>
+<thead><tr><th style="width:50%"><span class="adv">✅ 优势</span></th><th style="width:50%"><span class="disadv">⚠ 劣势</span></th></tr></thead>
+<tbody>
+<tr><td>多租户策略模型最成熟（EPG + Contract）</td><td>RoCE 性能隔离无专有 AI 优化</td></tr>
+<tr><td>安全隔离粒度最细（白名单模型）</td><td>ACI 模式学习曲线陡峭</td></tr>
+<tr><td>企业级成熟度高，合规友好</td><td>负载均衡仍为 per-flow ECMP</td></tr>
+<tr><td>混合负载（AI + 传统业务）兼容好</td><td>超大规模 AI 集群案例较少</td></tr>
+</tbody>
+</table>
+<blockquote><strong>最佳场景</strong>：企业数据中心（AI + 传统业务混合）、需要严格合规和精细策略的场景</blockquote>
+
+<h3><span class="section-tag">Arista</span> 4.3 Etherlink + EOS</h3>
+<table>
+<thead><tr><th style="width:50%"><span class="adv">✅ 优势</span></th><th style="width:50%"><span class="disadv">⚠ 劣势</span></th></tr></thead>
+<tbody>
+<tr><td>架构最开放，不绑定网卡</td><td>多租户策略模型不如 Cisco ACI 完整</td></tr>
+<tr><td>VOQ + 深缓冲天然性能隔离好</td><td>CLB 是 2025 年新功能，成熟度待验证</td></tr>
+<tr><td>DES 架构支持 10 万+ XPU 规模</td><td>X 系列（TH5）无 VOQ，性能隔离弱于 R 系列</td></tr>
+<tr><td>Meta 等超大规模客户背书</td><td>国内市场渠道和服务覆盖弱</td></tr>
+<tr><td>CLB 正在追赶 NVIDIA 自适应路由</td><td>无端到端交换机-网卡协同能力</td></tr>
+</tbody>
+</table>
+<blockquote><strong>最佳场景</strong>：超大规模 AI 集群、互联网/云厂商自建数据中心</blockquote>
+
+<h3><span class="section-tag">H3C</span> 4.4 AD-AIDC</h3>
+<table>
+<thead><tr><th style="width:50%"><span class="adv">✅ 优势</span></th><th style="width:50%"><span class="disadv">⚠ 劣势</span></th></tr></thead>
+<tbody>
+<tr><td>国产自主可控</td><td>公开技术文档少，方案透明度低</td></tr>
+<tr><td>控制器编排能力完整（资源隔离 + 网段规划）</td><td>无专有 AI 性能隔离机制</td></tr>
+<tr><td>国内渠道和服务覆盖强</td><td>生态封闭，仅支持自有设备</td></tr>
+<tr><td>资源隔离 + 租户标签 + VRF 思路合理</td><td>超大规模集群案例和验证不足</td></tr>
+</tbody>
+</table>
+<blockquote><strong>最佳场景</strong>：国内企业/运营商 AI 数据中心、国产化要求场景</blockquote>
+
+<!-- ==================== 5. 关键结论 ==================== -->
+<h2>5. 关键结论</h2>
+
+<h3>5.1 行业趋势判断</h3>
+<ol>
+  <li><strong>RoCE 多租户是 GPU 云的刚需</strong>，企业自用 AI 集群通常不需要严格多租户</li>
+  <li><strong>性能隔离比网络隔离更难</strong>，网络隔离（VRF + VNI）是通用能力，性能隔离依赖交换机专有硬件</li>
+  <li><strong>端到端协同是趋势</strong>，NVIDIA 的交换机-网卡协同模式正在被行业认可，Arista 也开始与 SmartNIC 集成</li>
+  <li><strong>VOQ 架构在多租户场景有天然优势</strong>，Arista R 系列的 VOQ + 深缓冲在不依赖专用网卡的前提下提供了较好的性能隔离</li>
+</ol>
+
+<h3>5.2 竞争定位建议</h3>
+<table>
+<thead><tr><th>如果目标客户是…</th><th>主要竞争对手</th><th>关键差异化方向</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">GPU 云服务商</td><td>NVIDIA Spectrum-X</td><td>性能隔离深度、NCCL 优化</td></tr>
+<tr><td class="strong-cell">企业混合数据中心</td><td>Cisco ACI</td><td>多租户策略精细度、合规能力</td></tr>
+<tr><td class="strong-cell">超大规模互联网公司</td><td>Arista Etherlink</td><td>规模、开放性、运维简洁性</td></tr>
+<tr><td class="strong-cell">国内企业/运营商</td><td>H3C AD-AIDC</td><td>国产化、本地服务、性价比</td></tr>
+</tbody>
+</table>
+
+<h3>5.3 技术能力差距总结</h3>
+<table>
+<thead><tr><th style="min-width:180px">能力</th><th>行业领先者</th><th>差距描述</th></tr></thead>
+<tbody>
+<tr><td class="strong-cell">逐包自适应路由</td><td>NVIDIA</td><td>仅 Spectrum-4 ASIC 支持，其他厂商无等效能力</td></tr>
+<tr><td class="strong-cell">交换机-网卡端到端拥塞控制</td><td>NVIDIA</td><td>需要 SuperNIC 配合，其他厂商依赖标准 DCQCN</td></tr>
+<tr><td class="strong-cell">多租户策略模型</td><td>Cisco ACI</td><td>EPG + Contract 白名单模型，其他厂商仅 VRF 级</td></tr>
+<tr><td class="strong-cell">VOQ + 深缓冲架构</td><td>Arista R 系列</td><td>硬件架构优势，其他厂商共享缓冲</td></tr>
+<tr><td class="strong-cell">RDMA QP 级负载均衡</td><td>Arista CLB</td><td>2025 年新功能，NVIDIA 通过 AR 实现类似效果</td></tr>
+<tr><td class="strong-cell">超大规模调度式 Fabric</td><td>Arista DES</td><td>仅 7700R4 支持，Meta 已验证</td></tr>
+</tbody>
+</table>
+
+<!-- ==================== 6. 图例 ==================== -->
+<h2>6. 图例说明</h2>
+<div class="legend">
+  <span><span class="tag-yes">✅ 已支持 / 能力较强</span></span>
+  <span><span class="tag-partial">🔶 部分支持 / 能力一般</span></span>
+  <span><span class="tag-no">— 基础支持 / 能力较弱</span></span>
+  <span><span class="tag-no">❌ 不支持</span></span>
+  <span><span class="tag-exclusive">专有能力</span></span>
+</div>
+
+<!-- ==================== 7. 参考资料 ==================== -->
+<h2>7. 参考资料</h2>
+<ol>
+  <li>NVIDIA Spectrum-X 技术博客 — <a href="https://developer.nvidia.com/blog/turbocharging-ai-workloads-with-nvidia-spectrum-x-networking-platform/" target="_blank">developer.nvidia.com</a></li>
+  <li>Zadara Spectrum-X 方案介绍 — <a href="https://www.zadara.com/blog/2025/06/03/high-performance-ai-networking-with-spectrum-x-enabling-nvidias-vision-through-zadara/" target="_blank">zadara.com</a></li>
+  <li>Cisco RoCE over VXLAN Fabrics 白皮书 — <a href="https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/roce-storage-implementation-over-nxos-vxlan-fabrics.html" target="_blank">cisco.com</a></li>
+  <li>Cisco AI/ML 网络蓝图 — <a href="https://www.cisco.com/c/en/us/td/docs/dcn/whitepapers/cisco-data-center-networking-blueprint-for-ai-ml-applications.html" target="_blank">cisco.com</a></li>
+  <li>Cisco VXLAN 多租户配置指南 — <a href="https://www.cisco.com/c/en/us/td/docs/switches/datacenter/pf/configuration/guide/b-pf-configuration/Multi-Tenancy.html" target="_blank">cisco.com</a></li>
+  <li>Arista Etherlink AI 平台发布 — <a href="https://www.arista.com/en/company/news/press-release/19493-arista-unveils-etherlink-ai-networking-platforms" target="_blank">arista.com</a></li>
+  <li>Arista 7800R4 AI Spine 博客 — <a href="https://blogs.arista.com/blog/powering-ai-centers-with-ai-spines" target="_blank">arista.com</a></li>
+  <li>Arista Smart AI Suite 发布 — <a href="https://www.arista.com/company/news/press-release/21271-pr-20250312" target="_blank">arista.com</a></li>
+  <li>Meta RoCE 网络论文 — <a href="https://engineering.fb.com/2024/08/05/data-center-engineering/roce-network-distributed-ai-training-at-scale/" target="_blank">engineering.fb.com</a></li>
+  <li>Meta 与 Arista 合作博客 — <a href="https://blogs.arista.com/blog/meta-and-arista-build-ai-at-scale" target="_blank">arista.com</a></li>
+</ol>
+
+<p style="color:#8f959e; font-size:12px; margin-top:32px; border-top:1px solid #dee0e3; padding-top:12px;">本文档中引用的外部资料内容均已改写，以符合内容许可合规要求。</p>
+
+</body>
+</html>
