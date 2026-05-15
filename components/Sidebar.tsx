@@ -184,6 +184,7 @@ const idcMenu: MenuItem[] = [
           { icon: <Bell size={16} />, label: 'Alarms', feature: 'alarms' },
           { icon: <BarChart3 size={16} />, label: 'Traffic Analytics', feature: 'traffic' },
           { icon: <FileText size={16} />, label: 'Logs', feature: 'logs' },
+          { icon: <Shield size={16} />, label: 'License', feature: 'license' },
         ],
       },
     ],

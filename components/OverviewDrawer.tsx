@@ -174,7 +174,7 @@ const LinkDetailView: React.FC<{ link: { from: string; to: string; fromPort: str
 };
 
 // ── Device Detail View ─────────────────────────────────────
-const DeviceDetailView: React.FC<{ deviceId: string; onBack: () => void; onLinkClick?: (link: { from: string; to: string; fromPort: string; toPort: string; type: string }) => void }> = ({ deviceId, onBack, onLinkClick }) => {
+const DeviceDetailView: React.FC<{ deviceId: string; onBack: () => void; onLinkClick?: (link: { from: string; to: string; fromPort: string; toPort: string; type: string }) => void; onDeviceClick?: (id: string) => void }> = ({ deviceId, onBack, onLinkClick, onDeviceClick }) => {
   const [devTab, setDevTab] = useState<'neighbors' | 'events'>('neighbors');
   const [neighborSearch, setNeighborSearch] = useState('');
   const [devAlarmSearch, setDevAlarmSearch] = useState('');
@@ -265,7 +265,7 @@ const DeviceDetailView: React.FC<{ deviceId: string; onBack: () => void; onLinkC
               {filteredNeighbors.length === 0 && <p className="text-[9px] text-slate-400 text-center py-4">暂无邻居</p>}
               {filteredNeighbors.map(n => (
                 <div key={n.id} className="py-2">
-                  <p className="text-[10px] font-bold text-slate-800">{n.name}</p>
+                  <p className="text-[10px] font-bold text-slate-800 cursor-pointer hover:text-[#0ABAB5] transition-colors" onClick={() => { if (onDeviceClick) onDeviceClick(n.id); }}>{n.name}</p>
                   <p className="text-[9px] text-[#0ABAB5] cursor-pointer hover:underline mt-0.5"
                     onClick={() => { if (onLinkClick) onLinkClick({ from: device.id, to: n.id, fromPort: 'Eth1/1', toPort: 'Eth1/49', type: 'ethernet' }); }}>
                     View Connectivity
@@ -310,7 +310,7 @@ const DeviceDetailView: React.FC<{ deviceId: string; onBack: () => void; onLinkC
 };
 
 // ── Site Detail View ──────────────────────────────────────
-const SiteDetailView: React.FC<{ site: Site; onBack: () => void }> = ({ site, onBack }) => {
+const SiteDetailView: React.FC<{ site: Site; onBack: () => void; onDeviceClick?: (id: string) => void }> = ({ site, onBack, onDeviceClick }) => {
   const [detailTab, setDetailTab] = useState<'devices' | 'alarms'>('devices');
   const [devSearch, setDevSearch] = useState('');
   const [siteAlarmSearch, setSiteAlarmSearch] = useState('');
@@ -329,40 +329,63 @@ const SiteDetailView: React.FC<{ site: Site; onBack: () => void }> = ({ site, on
   return (
     <div className="w-[200px] flex flex-col h-full overflow-hidden">
       {/* Back + site name */}
-      <div className="px-3 pt-3 pb-2 flex-shrink-0">
+      {/* Site name header - separate from sections */}
+      <div className="px-3 pt-3 pb-2 border-b border-slate-100 flex-shrink-0">
         <button onClick={onBack} className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-[#0ABAB5] mb-1.5 transition-colors">
           <ArrowLeft size={10} /> 返回全局
         </button>
         <h2 className="text-[16px] font-black text-slate-800 leading-tight">{site.name}</h2>
+        <p className="text-[9px] text-slate-400 mt-0.5">站点内信息概览</p>
       </div>
 
-      {/* Health */}
+      {/* Section 1: 站点信息 */}
       <div className="px-3 py-2 border-b border-slate-100 flex-shrink-0">
-        <p className="text-[10px] font-bold text-slate-500 mb-2">Site健康度</p>
-        <div className="flex items-center gap-2">
+        <p className="text-[10px] font-bold text-slate-500 mb-2">站点信息</p>
+        <div className="flex items-center gap-2 mb-2">
           <div className="w-9 h-9 bg-slate-50 rounded-xl flex items-center justify-center border border-slate-100 flex-shrink-0">{siteIcon}</div>
           <div className="w-9 h-9 rounded-full border-2 flex items-center justify-center flex-shrink-0" style={{ borderColor: healthColor }}>
             <span className="text-[9px] font-black" style={{ color: healthColor }}>{site.health}</span>
           </div>
           <span className="text-[18px] font-black" style={{ color: healthColor }}>{healthLevel}</span>
         </div>
-      </div>
-
-      {/* Site info table */}
-      <div className="px-3 pb-2 border-b border-slate-100 flex-shrink-0">
-        <div className="divide-y divide-slate-100">
+        <div>
           <div className="flex justify-between py-1.5"><span className="text-[10px] text-slate-500">站点名称</span><span className="text-[10px] text-slate-700 font-medium">{site.name}</span></div>
           <div className="flex justify-between py-1.5"><span className="text-[10px] text-slate-500">站点类型</span><span className="text-[10px] text-slate-700 font-medium">{typeLabel}</span></div>
           <div className="flex justify-between py-1.5"><span className="text-[10px] text-slate-500">站点位置</span><span className="text-[10px] text-slate-700 font-medium text-right max-w-[100px]">{site.location}</span></div>
         </div>
+        <div className="flex items-center justify-between mt-2">
+          <span className="text-[10px] font-bold text-slate-400">更多信息</span>
+          <span className="text-[10px] font-bold text-[#0ABAB5] cursor-pointer hover:underline">Enter Site →</span>
+        </div>
       </div>
 
-      {/* Device count + alarm breakdown */}
+      {/* Section 2: 设备信息 */}
       <div className="px-3 py-2 border-b border-slate-100 flex-shrink-0">
-        <div className="flex items-center justify-between py-1 border-b border-slate-50"><div className="flex items-center gap-1.5"><Server size={10} className="text-slate-400" /><span className="text-[10px] text-slate-600">设备总数</span></div><span className="text-[10px] font-bold text-slate-800">{devices.length}</span></div>
-        <div className="flex justify-between py-1 border-b border-slate-50"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block w-3 h-3 bg-red-500 rounded text-white text-[7px] font-black text-center leading-3">!</span>严重告警</span><span className="text-[10px] font-bold text-red-500">{criticalCount}</span></div>
-        <div className="flex justify-between py-1 border-b border-slate-50"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block w-3 h-3 bg-orange-500 rounded text-white text-[7px] font-black text-center leading-3">!</span>重要告警</span><span className="text-[10px] font-bold text-orange-500">{majorCount}</span></div>
-        <div className="flex justify-between py-1 border-b border-slate-50"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block text-[10px] text-yellow-500 leading-none">▲</span>一般告警</span><span className="text-[10px] font-bold text-blue-500">{minorCount}</span></div>
+        <p className="text-[10px] font-bold text-slate-500 mb-2">设备信息</p>
+        <div className="flex items-center justify-between py-1"><div className="flex items-center gap-1.5"><Server size={10} className="text-slate-400" /><span className="text-[10px] text-slate-600">设备总数</span></div><span className="text-[10px] font-bold text-slate-800">{devices.length}</span></div>
+        {site.siteType === 'DataCenter' ? (
+          <div className="ml-4 mt-1 space-y-0.5">
+            {[{role: 'Spine', label: 'Spine'}, {role: 'Leaf', label: 'Leaf'}, {role: 'Border', label: 'Border Leaf'}, {role: 'Optical', label: 'Server'}].map(r => {
+              const count = devices.filter(d => d.role === r.role).length;
+              return count > 0 ? <div key={r.role} className="flex justify-between py-0.5"><span className="text-[9px] text-slate-400">{r.label}</span><span className="text-[9px] font-medium text-slate-600">{count}</span></div> : null;
+            })}
+          </div>
+        ) : (
+          <div className="ml-4 mt-1 space-y-0.5">
+            {[{role: 'Core', label: 'Core'}, {role: 'Aggregation', label: 'Aggregation'}, {role: 'Access', label: 'Access'}, {role: 'AP', label: 'AP'}, {role: 'Camera', label: 'Client'}].map(r => {
+              const count = devices.filter(d => d.role === r.role).length;
+              return count > 0 ? <div key={r.role} className="flex justify-between py-0.5"><span className="text-[9px] text-slate-400">{r.label}</span><span className="text-[9px] font-medium text-slate-600">{count}</span></div> : null;
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Section 3: 告警信息 */}
+      <div className="px-3 py-2 border-b border-slate-100 flex-shrink-0">
+        <p className="text-[10px] font-bold text-slate-500 mb-2">告警信息</p>
+        <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block w-3 h-3 bg-red-500 rounded text-white text-[7px] font-black text-center leading-3">!</span>严重告警</span><span className="text-[10px] font-bold text-red-500">{criticalCount}</span></div>
+        <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block w-3 h-3 bg-orange-500 rounded text-white text-[7px] font-black text-center leading-3">!</span>重要告警</span><span className="text-[10px] font-bold text-orange-500">{majorCount}</span></div>
+        <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block text-[10px] text-yellow-500 leading-none">▲</span>一般告警</span><span className="text-[10px] font-bold text-blue-500">{minorCount}</span></div>
         <div className="flex justify-between py-1"><span className="text-[10px] text-slate-500 flex items-center gap-1"><span className="inline-block text-[10px] text-slate-400 leading-none">ℹ</span>提示告警</span><span className="text-[10px] font-bold text-slate-600">{warningCount}</span></div>
       </div>
 
@@ -389,7 +412,7 @@ const SiteDetailView: React.FC<{ site: Site; onBack: () => void }> = ({ site, on
                 const roleIcon = d.role === 'Core' || d.role === 'Spine' ? '◆' : d.role === 'Aggregation' || d.role === 'Leaf' ? '▲' : d.role === 'AP' ? '◉' : d.role === 'Camera' ? '◐' : d.role === 'OTN' || d.role === 'Optical' ? '◎' : '●';
                 const roleColor = d.role === 'Core' || d.role === 'Spine' ? '#0ABAB5' : d.role === 'Aggregation' || d.role === 'Leaf' ? '#6366f1' : d.role === 'AP' ? '#22c55e' : d.role === 'Camera' ? '#ef4444' : d.role === 'OTN' || d.role === 'Optical' ? '#f59e0b' : '#94a3b8';
                 return (
-                  <div key={d.id} className="flex items-center gap-2.5 py-2.5">
+                  <div key={d.id} className="flex items-center gap-2.5 py-2.5 cursor-pointer hover:bg-slate-50 rounded transition-colors" onClick={() => onDeviceClick?.(d.id)}>
                     <div className="w-8 h-8 bg-slate-100 rounded-lg flex items-center justify-center flex-shrink-0"><span style={{ color: roleColor, fontSize: 14 }}>{roleIcon}</span></div>
                     <div className="min-w-0"><p className="text-[10px] font-bold text-slate-800 truncate">{d.name}</p><p className="text-[9px] text-slate-400 mt-0.5">{d.mac}</p></div>
                   </div>
@@ -433,7 +456,8 @@ const SiteInterView: React.FC<{
   onDrillDevice?: (siteId: string, deviceName: string) => void;
   onDrillLink?: (fromSiteId: string, fromDeviceName: string, toSiteId: string, toDeviceName: string) => void;
   manualLinks?: { id: string; fromSiteId: string; fromDeviceId: string; fromPort: string; toSiteId: string; toDeviceId: string; toPort: string }[];
-}> = ({ site, interSiteLink, sites, onBack, defaultTab = 'neighbors', onDrillDevice, onDrillLink, manualLinks = [] }) => {
+  onSelectNeighbor?: (siteId: string) => void;
+}> = ({ site, interSiteLink, sites, onBack, defaultTab = 'neighbors', onDrillDevice, onDrillLink, manualLinks = [], onSelectNeighbor }) => {
   const [tab, setTab] = useState<'members' | 'neighbors'>(defaultTab);
 
   // Determine the site for header display
@@ -591,7 +615,7 @@ const SiteInterView: React.FC<{
               const nType = ns?.siteType === 'DataCenter' ? 'Datacenter' : ns?.siteType === 'Optical' ? 'Optical' : 'Campus';
               const statusColor = n.degradedCount > 0 ? '#f59e0b' : '#10b981';
               return (
-                <div key={n.siteId} className="py-3">
+                <div key={n.siteId} className="py-3 cursor-pointer hover:bg-slate-50 rounded transition-colors" onClick={() => onSelectNeighbor?.(n.siteId)}>
                   <div className="flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: statusColor }} />
                     <p className="text-[11px] font-bold text-slate-800 truncate">{n.siteName}</p>
@@ -637,19 +661,19 @@ export const OverviewDrawer: React.FC<OverviewDrawerProps> = ({ sites, selectedS
           selectedLink
             ? <LinkDetailView link={selectedLink} onBack={() => onSelectLink(null)} onDeviceClick={(id) => { onSelectLink(null); onSelectDevice(id); }} />
             : selectedDeviceId
-            ? <DeviceDetailView deviceId={selectedDeviceId} onBack={() => onSelectDevice(null)} onLinkClick={(l) => { onSelectDevice(null); onSelectLink(l); }} />
+            ? <DeviceDetailView deviceId={selectedDeviceId} onBack={() => onSelectDevice(null)} onLinkClick={(l) => { onSelectDevice(null); onSelectLink(l); }} onDeviceClick={(id) => onSelectDevice(id)} />
             : selectedSite
-            ? <SiteDetailView site={selectedSite} onBack={() => onSelectSite(null)} />
+            ? <SiteDetailView site={selectedSite} onBack={() => onSelectSite(null)} onDeviceClick={(id) => { onSelectSite(null); onSelectDevice(id); }} />
             : selectedInterSiteLink
-            ? <SiteInterView site={null} interSiteLink={selectedInterSiteLink} sites={sites} defaultTab="members" onBack={() => onSelectInterSiteLink(null)} onDrillDevice={onDrillDevice} onDrillLink={onDrillLink} manualLinks={manualLinks} />
+            ? <SiteInterView site={null} interSiteLink={selectedInterSiteLink} sites={sites} defaultTab="members" onBack={() => onSelectInterSiteLink(null)} onDrillDevice={onDrillDevice} onDrillLink={onDrillLink} manualLinks={manualLinks} onSelectNeighbor={(id) => { onSelectSiteNeighbor(id); onSelectInterSiteLink(null); }} />
             : selectedSiteNeighborId && sites.find(s => s.id === selectedSiteNeighborId)
-            ? <SiteInterView site={sites.find(s => s.id === selectedSiteNeighborId)!} interSiteLink={null} sites={sites} defaultTab="neighbors" onBack={() => onSelectSiteNeighbor(null)} onDrillDevice={onDrillDevice} onDrillLink={onDrillLink} manualLinks={manualLinks} />
+            ? <SiteInterView site={sites.find(s => s.id === selectedSiteNeighborId)!} interSiteLink={null} sites={sites} defaultTab="neighbors" onBack={() => onSelectSiteNeighbor(null)} onDrillDevice={onDrillDevice} onDrillLink={onDrillLink} manualLinks={manualLinks} onSelectNeighbor={(id) => onSelectSiteNeighbor(id)} />
             : (
               <div className="w-[200px] flex flex-col h-full overflow-hidden">
                 {/* Header */}
                 <div className="px-4 pt-4 pb-2 border-b border-slate-100 flex-shrink-0">
                   <h2 className="text-[14px] font-black text-slate-800">Overview</h2>
-                  <p className="text-[9px] text-slate-400 mt-0.5">站点生命周期管理与监控</p>
+                  <p className="text-[9px] text-slate-400 mt-0.5">站点信息概览</p>
                 </div>
 
                 {/* 全局健康度 */}

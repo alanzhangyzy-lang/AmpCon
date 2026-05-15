@@ -394,34 +394,10 @@ const CollapsedSiteContent: React.FC<{ site: Site; devices: Device[]; x: number;
       {/* header */}
       <rect x={x} y={y} width={w} height={hH} rx="12" fill={col} />
       <rect x={x} y={y + hH - 8} width={w} height="8" fill={col} />
-      {/* icon */}
-      {site.siteType === 'DataCenter' ? (
-        <g transform={`translate(${x + 9}, ${y + hH / 2 - 8})`}>
-          <rect x="0" y="0" width="14" height="16" rx="2" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" />
-          <line x1="3" y1="5" x2="11" y2="5" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" />
-          <line x1="3" y1="8" x2="11" y2="8" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" />
-          <line x1="3" y1="11" x2="11" y2="11" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" />
-          <circle cx="10" cy="5" r="1" fill="rgba(255,255,255,0.9)" />
-          <circle cx="10" cy="8" r="1" fill="rgba(255,255,255,0.9)" />
-          <circle cx="10" cy="11" r="1" fill="rgba(255,255,255,0.9)" />
-        </g>
-      ) : site.siteType === 'Optical' ? (
-        <g transform={`translate(${x + 9}, ${y + hH / 2 - 8})`}>
-          <circle cx="7" cy="8" r="3" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" />
-          <path d="M7 1 L7 5 M7 11 L7 15 M1 8 L4 8 M10 8 L13 8" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" strokeLinecap="round" />
-          <circle cx="7" cy="8" r="6.5" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="0.8" strokeDasharray="2,2" />
-        </g>
-      ) : (
-        <g transform={`translate(${x + 9}, ${y + hH / 2 - 8})`}>
-          <path d="M2 15 L2 6 L7 2 L12 6 L12 15 Z" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinejoin="round" />
-          <rect x="5" y="9" width="4" height="6" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" />
-          <line x1="4" y1="15" x2="10" y2="15" stroke="rgba(255,255,255,0.9)" strokeWidth="1.2" />
-        </g>
-      )}
-      {/* site name */}
-      <text x={x + 28} y={y + 18} fontSize="10" fontWeight="800" fill="white">{siteNameLabel(site.name)}</text>
-      {/* site type */}
-      <text x={x + 28} y={y + 32} fontSize="8" fill="rgba(255,255,255,0.7)">{'Site Type: ' + typeLabel}</text>
+      {/* site name - centered */}
+      <text x={x + w / 2} y={y + hH / 2 - 2} textAnchor="middle" fontSize="10" fontWeight="800" fill="white">{siteNameLabel(site.name)}</text>
+      {/* site location - centered */}
+      <text x={x + w / 2} y={y + hH / 2 + 10} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.65)">{site.location}</text>
 
       {/* 健康度 label + value */}
       <text x={x + p} y={y + hlY} fontSize="9" fill="#475569">健康度</text>
@@ -480,9 +456,12 @@ const ExpandedSiteContent: React.FC<{ site: Site; devices: Device[]; x: number; 
   return (
     <g>
       <rect x={x} y={y} width={w} height={h} rx="16" fill="white" stroke={siteColor(site.siteType)} strokeWidth="2" />
-      <rect x={x} y={y} width={w} height="36" rx="16" fill={siteColor(site.siteType)} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }} />
-      <rect x={x} y={y + 20} width={w} height="16" fill={siteColor(site.siteType)} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }} />
-      <text x={x + w / 2} y={y + 24} textAnchor="middle" fontSize="12" fontWeight="700" fill="white" style={{ cursor: 'pointer', pointerEvents: 'auto' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }}>{site.name} <tspan fontSize="10" opacity="0.8">{devices.length} devices · {site.location}</tspan></text>
+      <rect x={x} y={y} width={w} height="44" rx="16" fill={siteColor(site.siteType)} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }} />
+      <rect x={x} y={y + 28} width={w} height="16" fill={siteColor(site.siteType)} style={{ cursor: 'pointer' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }} />
+      {/* site name - centered */}
+      <text x={x + w/2} y={y + 22} textAnchor="middle" fontSize="11" fontWeight="800" fill="white" style={{ cursor: 'pointer', pointerEvents: 'auto' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }}>{site.name}</text>
+      {/* location with small pin - centered */}
+      <text x={x + w/2} y={y + 34} textAnchor="middle" fontSize="7" fill="rgba(255,255,255,0.65)" style={{ cursor: 'pointer', pointerEvents: 'auto' }} onClick={(e) => { e.stopPropagation(); if (onHeaderClick) onHeaderClick(); }}>{site.location}</text>
       {links.map((link, i) => {
         const fp = positions[link.from], tp = positions[link.to];
         if (!fp || !tp) return null;
@@ -648,7 +627,10 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
   const svgContainerRef = React.useRef<HTMLDivElement>(null);
   
   // Manual link drawing state
-  const [manualLinks, setManualLinks] = useState<ManualLink[]>([]);
+  const [manualLinks, setManualLinks] = useState<ManualLink[]>(() => {
+    try { const saved = localStorage.getItem('ampcon-manual-links'); return saved ? JSON.parse(saved) : []; } catch { return []; }
+  });
+  useEffect(() => { localStorage.setItem('ampcon-manual-links', JSON.stringify(manualLinks)); }, [manualLinks]);
   const [linkStartDevice, setLinkStartDevice] = useState<string | null>(null);
   const [showLinkEditor, setShowLinkEditor] = useState(false);
   const [manualLinkRows, setManualLinkRows] = useState<ManualLinkRow[]>([{ fromSiteId: '', fromDeviceId: '', fromPort: '', toSiteId: '', toDeviceId: '', toPort: '' }]);
@@ -863,7 +845,7 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
 
   return (
     <div className="h-full flex flex-row bg-[#f8fafb] overflow-hidden">
-      <OverviewDrawer sites={sites} selectedSiteId={selectedSiteId} onSelectSite={handleSelectSite} selectedDeviceId={selectedDeviceId} onSelectDevice={setSelectedDeviceId} selectedLink={selectedLink} onSelectLink={setSelectedLink} selectedSiteNeighborId={selectedSiteNeighborId} onSelectSiteNeighbor={setSelectedSiteNeighborId} selectedInterSiteLink={selectedInterSiteLink} onSelectInterSiteLink={setSelectedInterSiteLink} manualLinks={manualLinks} onDrillDevice={(siteId, deviceName) => {
+      <OverviewDrawer sites={sites} selectedSiteId={selectedSiteId} onSelectSite={handleSelectSite} selectedDeviceId={selectedDeviceId} onSelectDevice={setSelectedDeviceId} selectedLink={selectedLink} onSelectLink={setSelectedLink} selectedSiteNeighborId={selectedSiteNeighborId} onSelectSiteNeighbor={(id) => { setSelectedSiteNeighborId(id); setHighlightedSiteId(id); }} selectedInterSiteLink={selectedInterSiteLink} onSelectInterSiteLink={setSelectedInterSiteLink} manualLinks={manualLinks} onDrillDevice={(siteId, deviceName) => {
         // Expand the site
         setExpandedSites(prev => { const n = new Set(prev); n.add(siteId); return n; });
         // Find device by name in that site and select it
@@ -988,7 +970,7 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
 
                   const lineColor = link.quality === 'congested' ? '#f59e0b' : link.quality === 'degraded' ? '#ef4444' : '#0ABAB5';
                   const dashArr = link.quality === 'optimal' ? 'none' : '6,4';
-                  const isSelected = selectedInterSiteLink && ((selectedInterSiteLink.fromSiteId === link.from && selectedInterSiteLink.toSiteId === link.to) || (selectedInterSiteLink.fromSiteId === link.to && selectedInterSiteLink.toSiteId === link.from));
+                  const isSelected = selectedInterSiteLink && !selectedInterSiteLink.manualLinkIds && ((selectedInterSiteLink.fromSiteId === link.from && selectedInterSiteLink.toSiteId === link.to) || (selectedInterSiteLink.fromSiteId === link.to && selectedInterSiteLink.toSiteId === link.from));
                   const handleClick = (e: React.MouseEvent) => {
                     e.stopPropagation();
                     setSelectedInterSiteLink({ fromSiteId: link.from, toSiteId: link.to });
@@ -999,8 +981,6 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
                       <line x1={x1} y1={y1} x2={x2} y2={y2} stroke="transparent" strokeWidth="12" />
                       <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={lineColor} strokeWidth={isSelected ? 4 : 2} strokeDasharray={dashArr} opacity={isSelected ? 1 : 0.7} />
                       {isSelected && <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={lineColor} strokeWidth="8" opacity="0.15" />}
-                      <rect x={lx - 30} y={ly - 10} width="60" height="20" rx="6" fill="white" stroke={isSelected ? lineColor : '#e2e8f0'} strokeWidth={isSelected ? 2 : 1} />
-                      <text x={lx} y={ly + 4} textAnchor="middle" fontSize="9" fill="#64748b" fontWeight="600">{link.latency}</text>
                     </g>
                   );
                 } else {
@@ -1026,7 +1006,8 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
 
                   const memberCount = groupLinks.length;
                   const linkColor = '#6366f1';
-                  const isSelected = selectedInterSiteLink && ((selectedInterSiteLink.fromSiteId === first.fromSiteId && selectedInterSiteLink.toSiteId === first.toSiteId) || (selectedInterSiteLink.fromSiteId === first.toSiteId && selectedInterSiteLink.toSiteId === first.fromSiteId));
+                  const groupIds = groupLinks.map(l => l.id);
+                  const isSelected = selectedInterSiteLink && selectedInterSiteLink.manualLinkIds && groupIds.some(id => selectedInterSiteLink.manualLinkIds!.includes(id));
                   const isHovered = hoveredManualLink === siteKey;
                   const handleClick = (e: React.MouseEvent) => {
                     e.stopPropagation();
@@ -1479,8 +1460,8 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
             <h3 className="text-lg font-bold text-slate-800 text-center mb-2">
               {isAgg ? `确认删除聚合连线（${linksToRemove.length}条）` : '确认删除连线'}
             </h3>
-            <p className="text-sm text-slate-600 text-center mb-4">
-              以下连线将被永久删除，此操作无法撤销。请仔细确认。
+            <p className="text-sm font-bold text-red-500 text-center mb-4">
+              以下连线将被永久删除，此操作无法撤销，请仔细确认。
             </p>
             
             {/* 表格形式展示，和添加弹窗格式一致 */}

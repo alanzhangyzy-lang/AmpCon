@@ -18,6 +18,7 @@ import GlobalAlerts from './components/GlobalAlerts';
 import GlobalDashboard from './components/GlobalDashboard';
 import SiteMap from './components/SiteMap';
 import GlobalAppStore from './components/GlobalAppStore';
+import LicenseManager from './components/LicenseManager';
 import SwitchingApp from './components/apps/SwitchingApp';
 import WirelessApp from './components/apps/WirelessApp';
 import DCFabricApp from './components/apps/DCFabricApp';
@@ -142,6 +143,7 @@ const App: React.FC = () => {
     if (activeFeature === 'wired-clients') return <ClientManager siteId={activeSiteId!} filterType="wired" />;
     if (activeFeature === 'wireless-clients') return <ClientManager siteId={activeSiteId!} filterType="wifi" />;
     if (activeFeature === 'topology') return <GlobalTopology site={currentSite!} />;
+    if (activeFeature === 'license') return <LicenseManager />;
 
     const filteredDevices = MOCK_DEVICES.filter(d => d.siteId === activeSiteId && d.pluginType === activePlugin);
 
