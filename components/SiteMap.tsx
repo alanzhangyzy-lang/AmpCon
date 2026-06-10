@@ -43,7 +43,7 @@ const SITE_INTERNAL_LINKS: Record<string, { from: string; to: string }[]> = {
     { from: 'sw-f-01', to: 'sw-f-02' }, { from: 'sw-f-01', to: 'sw-f-03' }, { from: 'sw-f-01', to: 'sw-f-04' },
     { from: 'sw-f-02', to: 'sw-f-03' }, { from: 'sw-f-02', to: 'sw-f-04' }, { from: 'sw-f-03', to: 'sw-f-05' },
     { from: 'sw-f-04', to: 'sw-f-06' }, { from: 'sw-f-05', to: 'ap-wh-01' }, { from: 'sw-f-05', to: 'ap-wh-02' },
-    { from: 'sw-f-06', to: 'ap-wh-03' }, { from: 'sw-f-06', to: 'cam-wh-01' }, { from: 'sw-f-06', to: 'cam-wh-02' },
+    { from: 'sw-f-06', to: 'ap-wh-03' },
   ],
   'bj-dc': [
     { from: 'border-01', to: 'spine-01' }, { from: 'border-01', to: 'spine-02' },
@@ -52,7 +52,6 @@ const SITE_INTERNAL_LINKS: Record<string, { from: string; to: string }[]> = {
     { from: 'spine-02', to: 'leaf-04' }, { from: 'spine-02', to: 'leaf-05' }, { from: 'spine-02', to: 'leaf-06' },
     { from: 'spine-03', to: 'leaf-07' }, { from: 'spine-03', to: 'leaf-08' }, { from: 'spine-03', to: 'leaf-09' },
     { from: 'spine-04', to: 'leaf-10' }, { from: 'spine-04', to: 'leaf-11' }, { from: 'spine-04', to: 'leaf-12' },
-    { from: 'optical-01', to: 'border-01' }, { from: 'optical-02', to: 'border-02' },
   ],
   'nj-branch': [
     { from: 'sw-01', to: 'sw-02' }, { from: 'sw-01', to: 'sw-03' }, { from: 'sw-01', to: 'sw-04' },
@@ -1048,7 +1047,7 @@ const NetworkView: React.FC<{ sites: Site[]; onSelectSite: (id: string) => void;
           })()}
           {filteredSites.map(site => {
             const pos = sitePositions[site.id]; if (!pos) return null;
-            const isExp = expandedSites.has(site.id), devs = MOCK_DEVICES.filter(d => d.siteId === site.id);
+            const isExp = expandedSites.has(site.id), devs = MOCK_DEVICES.filter(d => d.siteId === site.id && d.role !== 'Camera' && d.role !== 'Optical');
             const isHL = highlightedSiteId === site.id;
             const off = dragOffsets[site.id] || { dx: 0, dy: 0 };
             const tx = pos.x + off.dx, ty = pos.y + off.dy;

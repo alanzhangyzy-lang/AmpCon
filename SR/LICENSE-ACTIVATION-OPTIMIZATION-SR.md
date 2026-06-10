@@ -12,7 +12,7 @@
 
 ## 1.1 功能概述
 
-本功能为 AmpCon 数据中心控制器提供 PicOS 交换机 License 的全生命周期管理能力，包括 License 激活（在线/离线）、续订、撤销、迁移、删除，以及 License 状态监控和到期预警。
+本功能为 AmpCon 数据中心控制器提供 PicOS 交换机 License 的全生命周期管理能力，包括 License 激活（在线/离线）、续订、迁移、移除，以及 License 状态监控和到期预警。
 
 ## 1.2 功能范围
 
@@ -273,7 +273,7 @@ flowchart TD
 
 **业务场景：** 设备下架退役、清理无效记录、License 不再使用
 
-**说明：** 由于 PicOS License 与 HWID 一对一绑定，撤销后 License 无法复用给其他设备，因此将 Revoke（撤销）和 Delete（删除）合并为一个 "Remove" 操作。
+**说明：** 由于 PicOS License 与 HWID 一对一绑定，撤销后 License 无法复用给其他设备，因此将撤销和删除合并为一个 "Remove" 操作。
 
 **流程：**
 1. 用户点击 Remove → 确认对话框（二次确认）
@@ -296,13 +296,15 @@ flowchart TD
 3. Portal 作废旧 License → 生成绑定新 HWID 的新 License
 4. AmpCon 解绑旧设备 + 激活新设备
 
-**离线模式：**
+**离线模式（在 Overview 弹窗内完成，不跳转 Tab）：**
 1. 用户点击 Transfer → 弹窗选择目标新设备
-2. AmpCon 生成 Revoke Ticket + 显示新设备 HWID
-3. 提示用户到 Portal：用 Revoke Ticket + 新 HWID 换发新 License
-4. 用户下载新 License → 回到 Import 导入 → 自动激活新设备
+2. 系统自动 Remove 旧设备 License
+3. 弹窗显示新设备 HWID + 提示用户到 Portal 换发
+4. 弹窗提供文件上传区域
+5. 用户从 Portal 下载新 License 文件后，在弹窗内上传
+6. 系统激活新设备 → 弹窗显示"Transfer 完成"
 
-**本质：** Remove（旧）+ Portal 换发 + Activate（新）的组合操作。
+**本质：** Remove（旧）+ Portal 换发 + Activate（新）的组合操作，离线场景在弹窗内一步完成。
 
 ---
 
@@ -358,10 +360,27 @@ flowchart TD
 
 | 菜单项 | 适用状态 | 点击行为 |
 |--------|----------|----------|
-| View Details | 所有 | 弹出 License 详情面板（含 Info + History） |
-| Renew | Expiring Soon / Expired | 触发续订流程 |
-| Transfer | Activated / Expiring Soon | 弹出目标设备选择弹窗 → 执行迁移 |
-| Remove | 所有 | 弹出确认对话框 → 清除交换机 License + 删除记录 |
+| View Details | 所有（始终可用） | 弹出 License 详情面板（含 Info + History） |
+| Activate | Not Activated / Expired 可用，其余置灰 | 弹窗选择激活方式（在线/离线） |
+| Renew | Expiring Soon / Expired 可用，其余置灰 | 联网：自动调 API 续订 / 离线：引导上传新文件 |
+| Transfer | Activated / Expiring Soon 可用，其余置灰 | 弹窗选择目标设备 → 联网：API 换发 / 离线：生成凭证+上传新文件 |
+| Remove | 所有（始终可用） | 确认后清除设备上的 License，设备回到 Not Activated 状态 |
+
+**操作可用性矩阵：**
+
+| 操作 | Not Activated | Activated | Expiring Soon | Expired |
+|------|:---:|:---:|:---:|:---:|
+| View Details | ✅ | ✅ | ✅ | ✅ |
+| Activate | ✅ | 🔒 | 🔒 | ✅ |
+| Renew | 🔒 | 🔒 | ✅ | ✅ |
+| Transfer | 🔒 | ✅ | ✅ | 🔒 |
+| Remove | ✅ | ✅ | ✅ | ✅ |
+
+**说明：**
+- 列表每行代表一台被纳管的设备（不是 License 文件记录）
+- Remove 只清除设备上的 License，设备不会从列表中消失
+- 所有操作历史记录在 View Details → Activity History 中
+- Transfer 离线场景在弹窗内完成（生成凭证 + 上传新文件），不需要跳转到 Import Tab
 
 ## 4.5 View Details 详情面板
 
@@ -587,7 +606,7 @@ Compliance = (Activated 数量 / Total 数量) × 100%
 | Remove 时设备离线 | 本地删除记录，设备上线后补发清除命令 | 提示"设备当前离线，将在设备上线后完成清除" |
 | Transfer 时 Portal 无法换发 | 操作失败，保持原状态 | 显示 Portal 返回的错误原因 |
 | Renew 时 Portal 无续订 License | 操作失败 | 提示"Portal 无可用续订，请先购买" + 跳转链接 |
-| Delete 时 License 状态为 Activated | 阻止操作 | 提示"已激活的 License 不可直接删除，请先撤销" |
+| Delete 时 License 状态为 Activated | 阻止操作 | 提示"已激活的 License 需先移除再清理" |
 | 批量激活部分失败 | 继续处理剩余项 | 结果日志逐条显示成功/失败 |
 
 ## 6.4 并发与冲突

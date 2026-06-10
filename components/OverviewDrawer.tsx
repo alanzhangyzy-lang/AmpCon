@@ -65,37 +65,26 @@ const LinkDetailView: React.FC<{ link: { from: string; to: string; fromPort: str
         </p>
       </div>
 
-      {/* Time axis */}
-      <div className="px-3 pt-2 pb-1 flex-shrink-0 border-b border-slate-200">
-        <div className="flex items-end justify-between text-[8px] text-slate-400 mb-1">
-          <span>16:45</span><span>16:50</span><span>16:55</span><span>17:00</span><span>17:05</span>
-        </div>
-        <div className="relative h-1 bg-slate-100 rounded-full">
-          <div className="absolute left-0 top-0 h-full bg-slate-300 rounded-full" style={{ width: '60%' }} />
-        </div>
-      </div>
-
-      {/* Metrics - Arista style */}
+      {/* Link Architecture Properties */}
       <div className="px-3 flex-shrink-0">
-        <div className="border-b border-slate-200 py-2">
-          <p className="text-[10px] text-slate-500">Traffic Throughput</p>
-          <p className="text-[10px] font-bold text-slate-800 text-right">0 Mbps</p>
+        <div className="border-b border-slate-200 py-2 flex items-center justify-between">
+          <p className="text-[10px] text-slate-500">链路类型</p>
+          <p className="text-[10px] font-bold text-slate-800">Port-channel</p>
         </div>
-        <div className="border-b border-slate-200 py-2">
-          <p className="text-[10px] text-slate-500">Bandwidth Utilization</p>
-          <p className="text-[10px] font-bold text-slate-800 text-right">0.672%</p>
+        <div className="border-b border-slate-200 py-2 flex items-center justify-between">
+          <p className="text-[10px] text-slate-500">链路状态</p>
+          <div className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full bg-emerald-500" />
+            <p className="text-[10px] font-bold text-slate-800">Active</p>
+          </div>
         </div>
-        <div className="border-b border-slate-200 py-2">
-          <p className="text-[10px] text-slate-500">Discard Rate</p>
-          <p className="text-[10px] font-bold text-slate-800 text-right">0 discards/s</p>
+        <div className="border-b border-slate-200 py-2 flex items-center justify-between">
+          <p className="text-[10px] text-slate-500">链路速率</p>
+          <p className="text-[10px] font-bold text-slate-800">20G（2×10G）</p>
         </div>
-        <div className="border-b border-slate-200 py-2">
-          <p className="text-[10px] text-slate-500">Error Rate</p>
-          <p className="text-[10px] font-bold text-slate-800 text-right">0 errors/s</p>
-        </div>
-        <div className="border-b border-slate-200 py-2">
-          <p className="text-[10px] text-slate-500">延迟</p>
-          <p className="text-[10px] font-bold text-slate-800 text-right">N/A</p>
+        <div className="border-b border-slate-200 py-2 flex items-center justify-between">
+          <p className="text-[10px] text-slate-500">介质类型</p>
+          <p className="text-[10px] font-bold text-slate-800">Fiber</p>
         </div>
       </div>
 
@@ -314,7 +303,9 @@ const SiteDetailView: React.FC<{ site: Site; onBack: () => void; onDeviceClick?:
   const [detailTab, setDetailTab] = useState<'devices' | 'alarms'>('devices');
   const [devSearch, setDevSearch] = useState('');
   const [siteAlarmSearch, setSiteAlarmSearch] = useState('');
-  const devices = MOCK_DEVICES.filter(d => d.siteId === site.id);
+  const ENDPOINT_ROLES = ['Camera', 'Optical'];
+  const allDevices = MOCK_DEVICES.filter(d => d.siteId === site.id);
+  const devices = allDevices.filter(d => !ENDPOINT_ROLES.includes(d.role));
   const filteredDevices = devices.filter(d => d.name.toLowerCase().includes(devSearch.toLowerCase()) || d.mac.toLowerCase().includes(devSearch.toLowerCase()));
   const siteAlarms = MOCK_ALARMS.filter(a => a.status === 'active');
   const criticalCount = siteAlarms.filter(a => a.severity === 'critical').length;
@@ -365,14 +356,14 @@ const SiteDetailView: React.FC<{ site: Site; onBack: () => void; onDeviceClick?:
         <div className="flex items-center justify-between py-1"><div className="flex items-center gap-1.5"><Server size={10} className="text-slate-400" /><span className="text-[10px] text-slate-600">设备总数</span></div><span className="text-[10px] font-bold text-slate-800">{devices.length}</span></div>
         {site.siteType === 'DataCenter' ? (
           <div className="ml-4 mt-1 space-y-0.5">
-            {[{role: 'Spine', label: 'Spine'}, {role: 'Leaf', label: 'Leaf'}, {role: 'Border', label: 'Border Leaf'}, {role: 'Optical', label: 'Server'}].map(r => {
+            {[{role: 'Spine', label: 'Spine'}, {role: 'Leaf', label: 'Leaf'}, {role: 'Border', label: 'Border Leaf'}].map(r => {
               const count = devices.filter(d => d.role === r.role).length;
               return count > 0 ? <div key={r.role} className="flex justify-between py-0.5"><span className="text-[9px] text-slate-400">{r.label}</span><span className="text-[9px] font-medium text-slate-600">{count}</span></div> : null;
             })}
           </div>
         ) : (
           <div className="ml-4 mt-1 space-y-0.5">
-            {[{role: 'Core', label: 'Core'}, {role: 'Aggregation', label: 'Aggregation'}, {role: 'Access', label: 'Access'}, {role: 'AP', label: 'AP'}, {role: 'Camera', label: 'Client'}].map(r => {
+            {[{role: 'Core', label: 'Core'}, {role: 'Aggregation', label: 'Aggregation'}, {role: 'Access', label: 'Access'}, {role: 'AP', label: 'AP'}].map(r => {
               const count = devices.filter(d => d.role === r.role).length;
               return count > 0 ? <div key={r.role} className="flex justify-between py-0.5"><span className="text-[9px] text-slate-400">{r.label}</span><span className="text-[9px] font-medium text-slate-600">{count}</span></div> : null;
             })}
