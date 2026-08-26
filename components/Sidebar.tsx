@@ -191,6 +191,48 @@ const idcMenu: MenuItem[] = [
   },
 ];
 
+const aidcMenu: MenuItem[] = [
+  { id: 'dashboard', icon: <Activity size={18} />, label: 'Dashboard', feature: 'overview' },
+  { id: 'topo', icon: <Network size={18} />, label: 'Topology', feature: 'topology' },
+  {
+    id: 'device',
+    icon: <HardDrive size={18} />,
+    label: 'Device',
+    children: [{ items: [{ icon: <HardDrive size={16} />, label: 'Device List', feature: 'devices' }] }],
+  },
+  {
+    id: 'provisioning',
+    icon: <Sliders size={18} />,
+    label: 'Provisioning',
+    children: [
+      {
+        items: [
+          { icon: <Network size={16} />, label: 'Network Design', feature: 'network-design' },
+          { icon: <LayoutGrid size={16} />, label: 'Studios', feature: 'studio2' },
+          { icon: <Layers size={16} />, label: 'Workspaces', feature: 'workspaces' },
+          { icon: <FileText size={16} />, label: 'Tasks', feature: 'tasks' },
+          { icon: <Activity size={16} />, label: 'Change Control', feature: 'change-control' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'assurance',
+    icon: <BarChart3 size={18} />,
+    label: 'Assurance',
+    children: [
+      {
+        items: [
+          { icon: <Bell size={16} />, label: 'Alarms', feature: 'alarms' },
+          { icon: <BarChart3 size={16} />, label: 'Traffic Analytics', feature: 'traffic' },
+          { icon: <FileText size={16} />, label: 'Logs', feature: 'logs' },
+          { icon: <Shield size={16} />, label: 'License', feature: 'license' },
+        ],
+      },
+    ],
+  },
+];
+
 const idcSettings: MenuItem = {
   id: 'system',
   icon: <Settings size={18} />,
@@ -301,8 +343,9 @@ function getMenuConfig(
     case 'campus-network':
       return { items: campusMenu, settingsItem: campusSettings };
     case 'idc-network':
-    case 'aidc-network':
       return { items: idcMenu, settingsItem: idcSettings };
+    case 'aidc-network':
+      return { items: aidcMenu, settingsItem: idcSettings };
     case 'security-surveillance':
       return { items: securityMenu, settingsItem: securitySettings };
     case 'transport-network':
@@ -339,6 +382,8 @@ const IconItem: React.FC<{
 }> = ({ icon, label, active, panelOpen, onClick }) => (
   <button
     onClick={onClick}
+    aria-haspopup={panelOpen !== undefined ? 'menu' : undefined}
+    aria-expanded={panelOpen}
     title={label}
     className={`w-10 h-10 mx-auto rounded-xl flex items-center justify-center transition-all relative group ${
       active
@@ -531,7 +576,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                       key={entry.feature}
                       icon={entry.icon}
                       label={entry.label}
-                      active={activeFeature === entry.feature}
+                      active={activeFeature === entry.feature || activeFeature.startsWith(`${entry.feature}:`)}
                       onClick={() => handlePanelItemClick(entry.feature)}
                     />
                   ))}

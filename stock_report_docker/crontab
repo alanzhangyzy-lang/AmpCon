@@ -1,0 +1,2 @@
+# 每周一到周五 15:35 执行
+35 15 * * 1-5 root cd /app && python stock_daily_report.py >> /app/output/run.log 2>&1

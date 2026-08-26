@@ -1,5 +1,11 @@
 import React, { useState } from 'react';
 import { Site } from '../../types';
+import AIDCDashboard from './AIDCDashboard';
+import AIDCProvisioning from './AIDCProvisioning';
+import AIDCStudio2 from './AIDCStudio2';
+import AIDCNetworkDesign from './AIDCNetworkDesign';
+import { createInitialInventoryTopologyState, InventoryTopologyState } from './AIDCInventoryTopology';
+import { AIDC_FABRIC_01, aidcDeviceName } from './aidcTopologyDomain';
 import {
   Cpu, Activity, Zap, Shield, Network, BarChart3, TrendingUp,
   AlertCircle, CheckCircle2, Layers, Sliders, Server, Clock, AlertTriangle
@@ -12,6 +18,7 @@ import {
 interface AIRoceAppProps {
   site: Site;
   feature: string;
+  onNavigate?: (feature: string) => void;
 }
 
 const Wrap = ({ children }: { children: React.ReactNode }) => (
@@ -73,7 +80,13 @@ const DashboardToolbar = () => {
   );
 };
 
-const AIRoceApp: React.FC<AIRoceAppProps> = ({ site, feature }) => {
+const AIRoceApp: React.FC<AIRoceAppProps> = ({ site, feature, onNavigate }) => {
+  const [inventoryState,setInventoryState] = useState<InventoryTopologyState>(()=>createInitialInventoryTopologyState());
+  if (feature === 'overview') return <AIDCDashboard site={site} />;
+  if (feature === 'network-design') return <AIDCNetworkDesign site={site} onNavigate={onNavigate} inventoryState={inventoryState} onInventoryStateChange={setInventoryState} />;
+  if (feature === 'studio2') return <AIDCStudio2 site={site} onNavigate={onNavigate} inventoryState={inventoryState} onInventoryStateChange={setInventoryState} />;
+  if (feature.startsWith('workspaces:')) return <AIDCProvisioning site={site} feature="workspaces" initialWorkspaceId={decodeURIComponent(feature.slice('workspaces:'.length))} />;
+  if (['studios', 'workspaces', 'tasks', 'change-control'].includes(feature)) return <AIDCProvisioning site={site} feature={feature} />;
 
   if (feature === 'overview') {
     const [loadTab, setLoadTab] = useState<'CPU'|'内存'|'温度'>('CPU');
@@ -299,40 +312,38 @@ const AIRoceApp: React.FC<AIRoceAppProps> = ({ site, feature }) => {
   }
 
   if (feature === 'topology') {
+    const missingLinks=AIDC_FABRIC_01.expectedLinks-AIDC_FABRIC_01.observedLinks;
     return (
       <div className="p-10 max-w-7xl mx-auto h-full flex flex-col space-y-10 animate-in fade-in duration-300 bg-[#fcfcfc] overflow-auto pb-32">
         <div>
           <h1 className="text-4xl font-black text-slate-900 tracking-tight">RoCE <span className="text-pink-600">Fabric Topology</span></h1>
-          <p className="text-slate-500 font-medium">Rail-Optimized GPU Interconnect Map</p>
+          <p className="text-slate-500 font-medium">{AIDC_FABRIC_01.podName} · {AIDC_FABRIC_01.spines} Spine · {AIDC_FABRIC_01.leafs} GPU Leaf</p>
+          <div className="mt-3 flex flex-wrap gap-2 text-[10px] font-bold">
+            <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-600">{AIDC_FABRIC_01.expectedLinks} expected links</span>
+            <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-700">{AIDC_FABRIC_01.observedLinks} observed</span>
+            <span className={`rounded-full border px-3 py-1 ${missingLinks?'border-red-200 bg-red-50 text-red-700':'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{missingLinks} missing</span>
+          </div>
         </div>
         <div className="bg-white border border-slate-200 rounded-[3rem] p-10 shadow-sm min-h-[500px] flex flex-col items-center justify-center">
           <div className="text-center space-y-8 w-full max-w-3xl">
-            <div className="flex justify-center gap-12">
-              {['Spine-01', 'Spine-02'].map(s => (
+            <div className="flex justify-center gap-3 flex-wrap">
+              {Array.from({length:AIDC_FABRIC_01.spines},(_,index)=>aidcDeviceName('Spine',index+1)).map(s => (
                 <div key={s} className="px-8 py-4 bg-pink-50 border-2 border-pink-200 rounded-2xl text-sm font-black text-pink-700">{s}</div>
               ))}
             </div>
             <div className="flex justify-center gap-2">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="w-px h-16 bg-pink-200" />
-              ))}
+              {Array.from({length:AIDC_FABRIC_01.spines}).map((_,i)=><div key={i} className="w-px h-16 bg-pink-200" />)}
             </div>
-            <div className="flex justify-center gap-6 flex-wrap">
-              {['GPU-Leaf-01', 'GPU-Leaf-02', 'GPU-Leaf-03', 'GPU-Leaf-04'].map(l => (
+            <div className="flex justify-center gap-3 flex-wrap">
+              {Array.from({length:AIDC_FABRIC_01.leafs},(_,index)=>aidcDeviceName('Leaf',index+1)).map(l => (
                 <div key={l} className="px-6 py-3 bg-indigo-50 border-2 border-indigo-200 rounded-2xl text-xs font-black text-indigo-700">{l}</div>
               ))}
             </div>
             <div className="flex justify-center gap-2">
-              {Array.from({ length: 12 }).map((_, i) => (
-                <div key={i} className="w-px h-12 bg-slate-200" />
-              ))}
+              {Array.from({length:AIDC_FABRIC_01.leafs}).map((_,i)=><div key={i} className="w-px h-12 bg-slate-200" />)}
             </div>
             <div className="flex justify-center gap-4 flex-wrap">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-500">
-                  <Cpu size={12} className="inline mr-1" />GPU-Node-{String(i + 1).padStart(2, '0')}
-                </div>
-              ))}
+              {Array.from({length:AIDC_FABRIC_01.leafs}).map((_,i)=><div key={i} className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-black text-slate-500"><Cpu size={12} className="inline mr-1" />GPU-Node-{String(i+1).padStart(2,'0')}</div>)}
             </div>
           </div>
         </div>

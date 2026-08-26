@@ -37,9 +37,9 @@ type CoreFeature =
 
 const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [activeSiteId, setActiveSiteId] = useState<string | null>(null);
-  const [activePlugin, setActivePlugin] = useState<PluginID | 'base'>('base');
-  const [activeFeature, setActiveFeature] = useState<CoreFeature | string>('portal-sites');
+  const [activeSiteId, setActiveSiteId] = useState<string | null>('bj-dc');
+  const [activePlugin, setActivePlugin] = useState<PluginID | 'base'>('aidc-network');
+  const [activeFeature, setActiveFeature] = useState<CoreFeature | string>('overview');
   
   // Global Subscription State
   const [subscribedPlugins, setSubscribedPlugins] = useState<PluginID[]>(['campus-network', 'security-surveillance', 'aidc-network', 'idc-network', 'transport-network']);
@@ -150,7 +150,7 @@ const App: React.FC = () => {
     // Map new plugin IDs to existing app components where available
     if (activePlugin === 'campus-network') return <CampusFabricApp site={currentSite!} devices={filteredDevices} feature={activeFeature} />;
     if (activePlugin === 'idc-network') return <DCFabricApp site={currentSite!} feature={activeFeature} />;
-    if (activePlugin === 'aidc-network') return <AIRoceApp site={currentSite!} feature={activeFeature} />;
+    if (activePlugin === 'aidc-network') return <AIRoceApp site={currentSite!} feature={activeFeature} onNavigate={setActiveFeature} />;
     if (activePlugin === 'transport-network') return <OpticalApp devices={filteredDevices} feature={activeFeature} />;
     if (activePlugin === 'security-surveillance') return <CCTVApp />;
 

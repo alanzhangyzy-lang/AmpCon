@@ -1,0 +1,7 @@
+TUSHARE_TOKEN=fda470738bdc41a2768fcc39fd271be864cfe1599a3d97345fbed80b
+OUTPUT_DIR=/app/output
+
+# 每周一到周五 15:35 执行
+35 15 * * 1-5 cd /app && python stock_daily_report.py >> /app/output/run.log 2>&1
+
+# 空行结尾（cron 要求）

@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  stock-report:
+    build: .
+    container_name: stock-report
+    restart: always
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ./output:/app/output

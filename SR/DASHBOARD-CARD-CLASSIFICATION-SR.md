@@ -697,3 +697,192 @@ Apstra 采用 Probe 驱动的 Dashboard 模式。Dashboard 由 Widget 组成, �
 ---
 
 Content was rephrased for compliance with licensing restrictions. All information sourced from publicly available vendor documentation.
+
+
+---
+
+## 附录: NVIDIA NetQ Workbench (Dashboard) Card 详细分类
+
+> 来源: NetQ 5.1/4.15 User Guide + TCA Events Reference
+> 定位: 以太网(Spectrum交换机 + Cumulus Linux)网络运维监控平台, 支持 RoCE/AIDC 场景
+>
+> 说明: NetQ 的 Dashboard 叫 Workbench, 由 Card(卡片) 组成。以下仅列出 Workbench Card 内容,
+> 不包含全局监控页面(Menu > Monitor 下的 BGP/ECMP/EVPN 等独立全屏页面)。
+>
+> NetQ 预置两个 Workbench:
+> - NetQ Workbench(默认): 含 Device Inventory + Switch Inventory + Validation Summary + WJH + Host Inventory + DPU Inventory + System Events
+> - Fabric Dashboard: 含 Link Status + Link Events + Sensor Health + Queue Lengths + WJH + System Events + BGP Sessions + EVPN Sessions + Device Inventory
+
+| 一级分类(Card) | 二级分类 | 三级指标 | 说明 | 交互能力 |
+|----------------|----------|----------|------|----------|
+| Validation Summary | - | Network Health Score | 基于周期性验证的网络整体健康度评分 | 卡片 S/M/L/Full 四级放大; 点击查看各验证项详情 |
+| Events | System Events | Event Count by Category | 按 Application/Device/Port/Priority 四类统计事件数 | 时间范围切换; 按 severity 筛选; Full 展开查看事件列表 |
+| What Just Happened (WJH) | L1 (物理层) | CRC Error / Symbol Error | 自协商失败/信号差/线缆不支持/拔出/链路训练失败 | 按丢包类型分类展示; 点击查看具体丢包端口和原因 |
+| What Just Happened (WJH) | L2 (二层) | Drop Events | VLAN 过滤/STP 阻塞/环回/组播出端口为空 | 同上 |
+| What Just Happened (WJH) | Router (路由层) | Drop Events | 路由查找失败/TTL过期/超MTU/黑洞路由/下一跳未解析 | 同上 |
+| What Just Happened (WJH) | Tunnel (隧道层) | Drop Events | VXLAN 解封装错误/Overlay MAC 异常 | 同上 |
+| What Just Happened (WJH) | Buffer (拥塞) | Tail Drop / WRED Drop | 尾丢弃(队列满)/WRED 随机早期丢弃 | 同上 |
+| What Just Happened (WJH) | Buffer (拥塞) | TC Congestion Threshold Crossed | 端口 TC 拥塞占用超阈值 | 同上 |
+| What Just Happened (WJH) | Buffer (拥塞) | Packet Latency Threshold Crossed | 包在交换机内延迟超阈值 | 同上 |
+| What Just Happened (WJH) | ACL | ACL Drop | 入/出端口 ACL 或路由 ACL 丢弃 | 同上 |
+| Link Events | - | Link State Changes | 链路 Up/Down 变更事件流 | 时间范围切换; 按设备/端口筛选 |
+| Switch Link Status | - | Fabric Link Overview | Fabric 级别所有链路状态(Up/Down 数量) | S: 总数; M: Up/Down 分布; L: 按设备列表; Full: 全量表格+筛选+导出 |
+| Sensor Health | Fan | Fan Status / Speed | 所有设备风扇状态和转速 | S: OK/异常数; M: 按设备统计; L: 详细列表; Full: 全量+筛选 |
+| Sensor Health | Temperature | Temperature (C) | 所有设备温度传感器读数 | 同上 |
+| Sensor Health | PSU | Power Supply Status / Watts / Volts | 电源状态/功耗/电压 | 同上 |
+| Queue Status | - | Port Buffer Congestion Ranking | 端口 Buffer 拥塞最严重的端口排名 | S: Top 拥塞端口数; L: 排名列表; Full: 全量+筛选 |
+| Device Card | Utilization | CPU% / Memory% / Disk% | 单设备资源利用率趋势图 | 选择设备后展示; 多 Tab 切换; 时间范围可调; 支持趋势图 |
+| Device Card | Interface Statistics | Tx/Rx Bytes/Packets/Errors/Discards | 单设备各接口流量和错误统计 | Tab 切换; 按接口筛选; Full 展开表格+导出 |
+| Device Card | Digital Optics | Rx/Tx Power / Bias / Temp / Voltage | 单设备光模块健康指标 | Tab 切换; 按端口筛选 |
+| Device Card | RoCE | Tx/Rx RoCE Counters | 单设备 RoCE Counter(ECN/PFC/Buffer/CNP) | Tab 切换; 按 Tx/Rx/Pool 筛选; Full 展开全量 Counter 表格 |
+| Device Card | PTP | PTP Clock Graphs | 单设备 PTP 时钟同步图表 | Tab 切换 |
+| Network Services | BGP | BGP Session Status | BGP 邻居状态(Established/Down 数量) | S: 总数; M: Up/Down 分布; L: 会话列表; Full: 全量+筛选+导出 |
+| Network Services | MLAG | MLAG Status | MLAG 对状态 | 同上 |
+| Network Services | EVPN | EVPN Session Status | EVPN 会话状态 | 同上 |
+| Network Services | LLDP | LLDP Neighbor Count | LLDP 邻居数量 | 同上 |
+| Inventory | Devices | Total Devices (Fresh/Rotten) | 设备总数, 按健康状态分(Fresh=正常, Rotten=异常) | S: 总数; M: Fresh/Rotten 分布; Full: 全量设备列表+筛选 |
+| Inventory | Switches | Switch Inventory | 交换机硬件/软件清单(OS/ASIC/CPU/Disk/Memory/Fan/PSU) | Full: 按组件类型分 Tab 展示 |
+| Inventory | DPUs | DPU Inventory | DPU 清单 | 同上 |
+| Inventory | NICs | NIC Inventory | 网卡清单(连接适配器/固件版本) | 下拉切换适配器/固件视图 |
+| Inventory | Hosts | Host Inventory | 主机清单 | S: 总数; Full: 全量列表 |
+| Device Groups | - | Device Component Distribution | 设备按组件类型的分布统计 | -- |
+| Trace Request | - | Path Discovery | 两点间路径发现和验证 | 输入源/目的设备, 展示路径; 支持 VLAN/VRF 选择 |
+| MAC Move Commentary | - | MAC Address Changes | 指定 VLAN 上 MAC 地址漂移信息 | 输入 VLAN, 展示 MAC 变化历史 |
+
+
+---
+
+## 8. AmpCon Dashboard 面板最终分类方案(6类)
+
+> 适用: Cloud DC(IDC Network/DC Fabric App) + AIDC(AIDC Network App)
+> 分类逻辑: 按运维关注层次组织, 从全局到细节, 从状态到事件
+
+### 分类总览
+
+| # | 分类 | 英文 | 回答什么问题 | Cloud DC | AIDC |
+|---|------|------|-------------|:---:|:---:|
+| 1 | 概览与健康 | Overview & Health | 网络整体好不好? | 是 | 是 |
+| 2 | 设备与资源 | Device & Resource | 哪台设备有硬件压力? | 是 | 是 |
+| 3 | 流量与性能 | Traffic & Performance | 流量哪里有瓶颈? | 是 | 是 |
+| 4 | 拥塞与无损 | Congestion & Lossless | 无损网络有没有问题? | 隐藏 | 是 |
+| 5 | 告警与事件 | Alarms & Events | 发生了什么? | 是 | 是 |
+| 6 | 合规与保障 | Compliance & SLA | 达不达标? | 是 | 是 |
+
+---
+
+### 8.1 概览与健康 (Overview & Health)
+
+| 二级分类 | 面板名称 | 说明 | 优先级 |
+|----------|----------|------|--------|
+| - | 综合健康度 | 综合各维度健康评分, 含状态颜色映射 | P0 |
+| - | 站点健康度 | 单站点健康评分 | P0 |
+| - | Fabric健康度 | Fabric 整体健康饼图(按告警严重度分类设备数) | P0 |
+| - | 光模块健康度(服务器/交换机) | 光模块整体健康状态 | P1 |
+| - | 设备资源统计 | 在线/离线/异常设备数 + 在线率环形图 | P0 |
+| - | 设备角色分布 | Spine/Leaf/Border/Server 条形图 | P2 |
+
+---
+
+### 8.2 设备与资源 (Device & Resource)
+
+| 二级分类 | 面板名称 | 说明 | 交互能力 | 优先级 |
+|----------|----------|------|----------|--------|
+| 交换机 | 交换机CPU负载Top5 | 按 CPU 使用率排名的设备 | 切换 Tx/Rx; N=5/10/15/20; 右键跳转设备详情 | P0 |
+| 交换机 | 交换机内存负载Top5 | 按内存使用率排名的设备 | 同上 | P0 |
+| 交换机 | 交换机温度Top5 | 按温度排名的设备 | 同上 | P1 |
+| 交换机 | 利用率趋势分布 | 设备级 CPU/内存/利用率分布 | -- | P2 |
+| 交换机 | 资源利用率趋势 | CPU/内存/温度 P25/P50/P75 趋势线 | -- | P2 |
+| 服务器 | 服务器带宽利用率直方图 | Servers Bandwidth Utilization Histogram | -- | P1 |
+| 服务器 | 服务器拥塞度直方图 | Servers Congestion Histogram | -- | P1 |
+| 光模块 | 光模块统计 | All, 交换机Up/Down, 服务器Up/Down | -- | P0 |
+| 光模块 | 光模块趋势图 | 光模块各指标趋势 | -- | P2 |
+
+---
+
+### 8.3 流量与性能 (Traffic & Performance)
+
+| 二级分类 | 面板名称 | 说明 | 交互能力 | 优先级 |
+|----------|----------|------|----------|--------|
+| 交换机 | 流量概览 Traffic Map | 按 Tier 分层展示 BW/CBW | -- | P1 |
+| 交换机 | 流量分层图 Levels Traffic Map | 按设备 Level 展示流量分布 | -- | P1 |
+| 交换机 | 带宽排名前十 Top 10 Switches By Bandwidth | 按 Tx+Rx 带宽排名的交换机 | N=5/10/15/20; 切换 List/Bar; 切换端口/设备 | P0 |
+| 交换机 | 拥塞最严重前五 Top 5 Congested Switches | 按利用率%排名的交换机 | 同上 | P0 |
+| 服务器 | 带宽排名前五 Top 5 Servers By Bandwidth | 按带宽排名的服务器 | 同上 | P0 |
+| 服务器 | 拥塞最严重前五 Top 5 Congested Servers | 按利用率%排名的服务器 | 同上 | P0 |
+| 接口遥测-RX | Bitrate In (Mbps) | 接口入方向比特率 | 单卡片, 按地区/区域配置覆盖 | P0 |
+| 接口遥测-RX | Broadcast In (Kpps) | 接口入方向广播包速率 | -- | P1 |
+| 接口遥测-RX | Multicast Packets In (Kpps) | 接口入方向组播包速率 | -- | P1 |
+| 接口遥测-RX | PAUSE Frames In (frames/sec) | 接口入方向 PAUSE 帧速率 | -- | P1 |
+| 接口遥测-RX | Unicast Packets In (Kpps) | 接口入方向单播包速率 | -- | P1 |
+| 接口遥测-RX | Utilization In (%) | 接口入方向利用率 | -- | P0 |
+| 接口遥测-RX Errors | Alignment Error Rate (errors/sec) | 对齐错误速率 | -- | P1 |
+| 接口遥测-RX Errors | Discards In (discards/sec) | 入方向丢弃速率 | -- | P0 |
+| 接口遥测-RX Errors | Errors In (errors/sec) | 入方向错误速率 | -- | P0 |
+| 接口遥测-RX Errors | FCS Error Rate (errors/sec) | FCS 校验错误速率 | -- | P1 |
+| 接口遥测-RX Errors | Giants (errors/sec) | 超大帧错误速率 | -- | P2 |
+| 接口遥测-RX Errors | Runts (errors/sec) | 超小帧错误速率 | -- | P2 |
+| 接口遥测-RX Errors | Symbol Error Rate (errors/sec) | 符号错误速率 | -- | P1 |
+| 接口遥测-TX | Bitrate Out (Mbps) | 接口出方向比特率 | -- | P0 |
+| 接口遥测-TX | Broadcast Out (Kpps) | 接口出方向广播包速率 | -- | P1 |
+| 接口遥测-TX | Multicast Packets Out (Mbps) | 接口出方向组播包速率 | -- | P1 |
+| 接口遥测-TX | PAUSE Frames Out (frames/sec) | 接口出方向 PAUSE 帧速率 | -- | P1 |
+| 接口遥测-TX | Unicast Packets Out (Kpps) | 接口出方向单播包速率 | -- | P1 |
+| 接口遥测-TX | Utilization Out (%) | 接口出方向利用率 | -- | P0 |
+| 接口遥测-TX Errors | Discards Out (discards/sec) | 出方向丢弃速率 | -- | P0 |
+| 接口遥测-TX Errors | Errors Out (errors/sec) | 出方向错误速率 | -- | P0 |
+
+---
+
+### 8.4 拥塞与无损 (Congestion & Lossless) -- AIDC 专属
+
+| 二级分类 | 面板名称 | 说明 | 交互能力 | 优先级 |
+|----------|----------|------|----------|--------|
+| ECN | ECN 报文数 Top5(交换机) | 按 ECN 标记包数排名的交换机端口 | N=5/10; 切换 List/Bar | P0 |
+| ECN | ECN 报文数 Top5(网卡) | 按 ECN 标记包数排名的网卡 | 同上 | P0 |
+| PFC | PFC 暂停帧 Top5 | 按 PFC Pause 帧数排名的端口 | 同上 | P0 |
+| Buffer | 队列丢包 Top5 | 按丢包数排名的端口队列 | 同上 | P0 |
+| Buffer | Headroom Buffer 利用率趋势 | 面积折线图 + 阈值线(75%) | 时间范围可调 | P0 |
+| Buffer | Shared Buffer 利用率 Top5 | 按 Shared Buffer 占用排名 | -- | P1 |
+| 拥塞趋势 | 网络拥塞趋势图 | ECN标记率 + PFC触发率 + 丢包率 多线趋势 | 时间范围可调 | P0 |
+| 拥塞排名 | 拥塞带宽(CBW) Top5 | 按拥塞带宽百分比排名的设备 | -- | P1 |
+| 拥塞排名 | XmitWait Top5 | 按发送等待时间排名的端口 | -- | P1 |
+| 链路质量 | FEC 错误分布直方图 | RS-FEC 符号错误 16 级分布 | -- | P2 |
+| 链路质量 | BER 误码率趋势 | Pre-FEC/Post-FEC/Symbol BER 趋势线 | -- | P2 |
+
+---
+
+### 8.5 告警与事件 (Alarms & Events)
+
+| 二级分类 | 面板名称 | 说明 | 交互能力 | 优先级 |
+|----------|----------|------|----------|--------|
+| 告警统计 | 告警汇总 | 2x2 网格: 严重/重要/一般/提示 四级统计 | 点击各级别跳转告警列表 | P0 |
+| 告警排名 | 告警设备 Top5 | 按告警数量排名的 Top5 设备(服务器/交换机) | 切换服务器/交换机视图 | P0 |
+| 近期活动 | Recent Activities | 近期活动列表 | 下拉筛选 severity | P0 |
+| 事件历史 | Events History | 全网告警事件列表, 含时间/严重度/描述 | 时间区间筛选; 支持导出 | P0 |
+
+---
+
+### 8.6 合规与保障 (Compliance & SLA)
+
+| 二级分类 | 面板名称 | 说明 | Cloud DC | AIDC | 优先级 |
+|----------|----------|------|:---:|:---:|--------|
+| SLA | 网络 SLA 达标率 | 可用性%/延迟达标%/丢包达标% | 是 | -- | P1 |
+| SLA | 训练任务网络 SLA | 零丢包率/尾延迟达标率/任务不中断率 | -- | 是 | P1 |
+| 配置 | 配置合规率 | In-Sync vs Out-of-Sync 设备比率 | 是 | -- | P1 |
+| 协议 | 协议健康汇总 | BGP/EVPN/OSPF/VXLAN Established 比率(汇总数字) | 是 | -- | P1 |
+| 版本 | 固件版本合规率 | 目标版本覆盖率% | 是 | 是 | P2 |
+| 服务 | 活跃服务/App 状态 | 各 App/服务运行状态 | 是 | 是 | P2 |
+| RoCE配置 | RoCE 配置合规 | RoCE 参数一致性(ECN/PFC/Buffer配置) | -- | 是 | P1 |
+
+---
+
+### 归类设计原则说明
+
+| 原则 | 说明 |
+|------|------|
+| 分层逻辑 | 从全局(概览) -> 硬件(设备) -> 网络(流量) -> 专项(拥塞) -> 事件(告警) -> 评估(合规) |
+| AIDC 可独立 | 第4类"拥塞与无损"在 Cloud DC 场景可完全隐藏, 不影响其他分类 |
+| Telemetry 归入流量 | 接口级的 Rx/Tx Counter 本质是流量性能数据, 不单独成类 |
+| 协议不独立成类 | 协议状态(BGP/EVPN)以汇总数字形式归入"合规与保障", 不占独立分类 |
+| 容量不进 Dashboard | 租户数/VRF数/IP池 等缓慢变化的容量指标放独立资源管理页面, 不放 Dashboard |
+| 硬件容量归设备 | MAC表/路由表/ECMP等 TCAM 硬件容量如需监控, 归入"设备与资源" |

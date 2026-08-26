@@ -15,9 +15,12 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ site, activePlugin, onSiteSelect, onPluginSelect, onLogout }) => {
   const [showUserMenu, setShowUserMenu] = useState(false);
 
-  // Available plugins at site level (excluding SD-WAN which is global)
-  const availablePlugins = site 
-    ? PLUGINS.filter(p => site.activePlugins.includes(p.id) && p.id !== 'sd-wan') 
+  // Preserve each site's configured APP order (Frankfurt: IDC first, AIDC second).
+  const availablePlugins = site
+    ? site.activePlugins
+        .filter(id => id !== 'sd-wan')
+        .map(id => PLUGINS.find(plugin => plugin.id === id))
+        .filter((plugin): plugin is (typeof PLUGINS)[number] => Boolean(plugin))
     : [];
 
   return (
