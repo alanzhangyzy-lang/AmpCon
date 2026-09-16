@@ -3,8 +3,12 @@ import { Eye, EyeOff, Maximize2, Network, Server, ZoomIn, ZoomOut } from 'lucide
 
 export type TopologyRole = 'Core' | 'Spine' | 'Aggregation' | 'Leaf' | 'Border' | 'Access' | 'Endpoint' | 'Unclassified';
 export type TopologyNodeState = 'design' | 'mainline' | 'workspace-added' | 'workspace-modified' | 'ignored' | 'discovered' | 'conflict';
-export type TopologyNode<T = unknown> = { id:string; label:string; subtitle?:string; role:TopologyRole; state:TopologyNodeState; data:T };
-export type TopologyLink = { id:string; source:string; target:string; sourceInterface?:string; targetInterface?:string; speed?:string; state:TopologyNodeState; confidence?:'High'|'Medium'|'Low'; relationship?:'inventory'|'expected'|'planned' };
+export type TopologyNodeIcon = 'network' | 'server';
+export type TopologyNodeVariant = 'default' | 'device' | 'nic';
+export type TopologyNode<T = unknown> = { id:string; label:string; subtitle?:string; role:TopologyRole; state:TopologyNodeState; icon?:TopologyNodeIcon; variant?:TopologyNodeVariant; ports?:string[]; data:T };
+export type TopologyLinkAnnotation = { title:string; subtitle?:string };
+export type TopologyLink = { id:string; source:string; target:string; sourceInterface?:string; targetInterface?:string; speed?:string; annotation?:TopologyLinkAnnotation; state:TopologyNodeState; confidence?:'High'|'Medium'|'Low'; relationship?:'inventory'|'expected'|'planned'|'mlag-peer' };
+export type TopologyRegion = { id:string; label:string; nodeIds:string[]; kind:'domain'|'server' };
 export type TopologyHierarchyGroup = { id:string; label:string; nodeIds:string[]; level:0|1|2; parentId?:string; validation?:'none'|'valid'|'warning'|'error'; summary?:string; layout?:'horizontal'|'vertical'; compactChildren?:boolean };
 export type TopologyRolePresentation = { ranks?:Partial<Record<TopologyRole,number>>; bandLabels?:Partial<Record<TopologyRole,string>> };
 
@@ -12,12 +16,16 @@ type Props<T> = {
   nodes: TopologyNode<T>[];
   links: TopologyLink[];
   hierarchyGroups?: TopologyHierarchyGroup[];
+  regions?: TopologyRegion[];
   rolePresentation?: TopologyRolePresentation;
   selectedHierarchyGroupId?: string;
   selectedNodeId?: string;
   selectedLinkId?: string;
   showLinkBadges?: boolean;
+  showRoleBands?: boolean;
+  showLegend?: boolean;
   fitToContainer?: boolean;
+  vlanAccessLayout?: boolean;
   visualMode?: 'default'|'design'|'lldp'|'compare';
   emptyMessage?: string;
   topRightAccessory?: React.ReactNode;
@@ -54,12 +62,27 @@ const NODE_WIDTH=120;
 const NODE_HEIGHT=28;
 const NODE_GAP=48;
 const ROLE_BAND_HEIGHT=58;
+const PORT_COLUMNS=8;
+const nodeWidth=(node:TopologyNode<unknown>,vlanAccessLayout=false)=>node.variant==='device'?(vlanAccessLayout?64:56):node.variant==='nic'?(vlanAccessLayout?108:92):NODE_WIDTH;
+const nodeHeight=(node:TopologyNode<unknown>,vlanAccessLayout=false)=>node.variant==='device'?(vlanAccessLayout?56:48):node.variant==='nic'?(vlanAccessLayout?48:42):node.ports?.length?Math.max(50,38+Math.ceil(node.ports.length/PORT_COLUMNS)*12):NODE_HEIGHT;
+const compactRow=(nodes:TopologyNode<unknown>[])=>nodes.length>0&&nodes.every(node=>node.variant==='device'||node.variant==='nic');
+const rowMetrics=(nodes:TopologyNode<unknown>[],vlanAccessLayout=false)=>{
+  if(!compactRow(nodes))return{slotWidth:NODE_WIDTH,gap:NODE_GAP};
+  if(!vlanAccessLayout)return{slotWidth:80,gap:nodes.length<=2?140:nodes.length<=4?120:40};
+  const longestLabel=Math.min(18,Math.max(...nodes.map(node=>node.label.length)));
+  const slotWidth=nodes.every(node=>node.variant==='device')?Math.max(100,longestLabel*7.4):96;
+  const gap=nodes.length<=2?140:nodes.length<=4?112:32;
+  return{slotWidth,gap};
+};
 
-export function layoutByRole<T>(nodes:TopologyNode<T>[], canvasWidth=1000, links:TopologyLink[]=[], canvasHeight=620, ranks:Record<TopologyRole,number>=roleRank): PositionedNode<T>[] {
+export function layoutByRole<T>(nodes:TopologyNode<T>[], canvasWidth=1000, links:TopologyLink[]=[], canvasHeight=620, ranks:Record<TopologyRole,number>=roleRank, vlanAccessLayout=false): PositionedNode<T>[] {
   const rows = new Map<number,TopologyNode<T>[]>();
   nodes.forEach(node=>{const rank=ranks[node.role];rows.set(rank,[...(rows.get(rank)||[]),node])});
   const orderedRows=[...rows.entries()].sort(([a],[b])=>a-b);
-  const rowStep=orderedRows.length<=1?0:Math.min(120,(canvasHeight-160)/(orderedRows.length-1));
+  const compactLayout=compactRow(nodes);
+  const compactStep=vlanAccessLayout?260:144;
+  const availableHeight=canvasHeight-(vlanAccessLayout?120:160);
+  const rowStep=orderedRows.length<=1?0:Math.min(compactLayout?compactStep:120,availableHeight/(orderedRows.length-1));
   const firstY=canvasHeight/2-((orderedRows.length-1)*rowStep)/2;
   const placed=new Map<string,PositionedNode<T>>();
   const result:PositionedNode<T>[]=[];
@@ -69,16 +92,20 @@ export function layoutByRole<T>(nodes:TopologyNode<T>[], canvasWidth=1000, links
   };
   orderedRows.forEach(([,sourceRow],rowIndex)=>{
     const row=[...sourceRow].sort((a,b)=>(connectedX(a.id)??Number.POSITIVE_INFINITY)-(connectedX(b.id)??Number.POSITIVE_INFINITY));
-    const rowWidth=row.length*NODE_WIDTH+Math.max(0,row.length-1)*NODE_GAP;
-    const firstX=(canvasWidth-rowWidth)/2+NODE_WIDTH/2;
-    const baseXs=row.map((_,index)=>firstX+index*(NODE_WIDTH+NODE_GAP));
+    const {slotWidth,gap}=rowMetrics(row,vlanAccessLayout);
+    const rowWidth=row.length*slotWidth+Math.max(0,row.length-1)*gap;
+    const firstX=(canvasWidth-rowWidth)/2+slotWidth/2;
+    const baseXs=row.map((_,index)=>firstX+index*(slotWidth+gap));
     const aligned=row.map((node,index)=>({index,target:connectedX(node.id)})).filter(item=>item.target!==null) as {index:number;target:number}[];
+    const canDirectAlign=vlanAccessLayout&&aligned.length===row.length&&new Set(aligned.map(item=>Math.round(item.target))).size===row.length;
+    if(canDirectAlign){row.forEach(node=>{const positioned={...node,x:connectedX(node.id)!,y:firstY+rowIndex*rowStep};placed.set(node.id,positioned);result.push(positioned)});return}
     const desiredShift=aligned.length?aligned.reduce((sum,item)=>sum+item.target-baseXs[item.index],0)/aligned.length:0;
-    const minShift=48+NODE_WIDTH/2-baseXs[0];
-    const maxShift=canvasWidth-48-NODE_WIDTH/2-baseXs[baseXs.length-1];
+    const minShift=48+slotWidth/2-baseXs[0];
+    const maxShift=canvasWidth-48-slotWidth/2-baseXs[baseXs.length-1];
     const shift=Math.max(minShift,Math.min(maxShift,desiredShift));
     row.forEach((node,index)=>{const positioned={...node,x:baseXs[index]+shift,y:firstY+rowIndex*rowStep};placed.set(node.id,positioned);result.push(positioned)});
   });
+  if(vlanAccessLayout&&compactLayout&&orderedRows.length===2){const parentIds=new Set(orderedRows[0][1].map(node=>node.id));parentIds.forEach(parentId=>{const childPositions=links.flatMap(link=>link.source===parentId&&placed.has(link.target)?[placed.get(link.target)!]:link.target===parentId&&placed.has(link.source)?[placed.get(link.source)!]:[]);if(childPositions.length<=1)return;const parent=placed.get(parentId);if(!parent)return;const centered={...parent,x:childPositions.reduce((sum,node)=>sum+node.x,0)/childPositions.length};placed.set(parentId,centered);const resultIndex=result.findIndex(node=>node.id===parentId);if(resultIndex>=0)result[resultIndex]=centered})}
   return result;
 }
 
@@ -162,7 +189,7 @@ function layoutByHierarchy<T>(nodes:TopologyNode<T>[], groups:TopologyHierarchyG
   return{nodes:result,width:Math.max(minimumWidth,cursorX),bounds};
 }
 
-const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,selectedHierarchyGroupId,selectedNodeId,selectedLinkId,showLinkBadges=true,fitToContainer=false,visualMode='default',emptyMessage='No registered topology to display.',topRightAccessory,externalNodeDropEnabled=false,onExternalNodeDrop,onHierarchyGroupClick,onNodeClick,onLinkClick}:Props<T>) => {
+const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],regions=[],rolePresentation,selectedHierarchyGroupId,selectedNodeId,selectedLinkId,showLinkBadges=true,showRoleBands=true,showLegend=true,fitToContainer=false,vlanAccessLayout=false,visualMode='default',emptyMessage='No registered topology to display.',topRightAccessory,externalNodeDropEnabled=false,onExternalNodeDrop,onHierarchyGroupClick,onNodeClick,onLinkClick}:Props<T>) => {
   const effectiveRoleRank=useMemo<Record<TopologyRole,number>>(()=>({...roleRank,...rolePresentation?.ranks}),[rolePresentation]);
   const roleBandLabels=rolePresentation?.bandLabels;
   const containerRef=useRef<HTMLDivElement>(null);
@@ -214,11 +241,23 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
   const viewHeight=620;
   const [canvasWidth,setCanvasWidth]=useState(1000);
   useEffect(()=>{const container=containerRef.current;if(!container)return;const update=()=>{const {width,height}=container.getBoundingClientRect();if(width>0&&height>0)setCanvasWidth(Math.max(1000,(viewHeight*width)/height))};update();const observer=new ResizeObserver(update);observer.observe(container);return()=>observer.disconnect()},[viewHeight]);
-  const roleLayoutWidth=useMemo(()=>{const rowCounts=new Map<number,number>();nodes.forEach(node=>rowCounts.set(effectiveRoleRank[node.role],(rowCounts.get(effectiveRoleRank[node.role])||0)+1));const largestRow=Math.max(1,...rowCounts.values());return Math.max(canvasWidth,largestRow*(NODE_WIDTH+NODE_GAP)+120)},[nodes,canvasWidth,effectiveRoleRank]);
+  const roleLayoutWidth=useMemo(()=>{const rows=new Map<number,TopologyNode<T>[]>();nodes.forEach(node=>rows.set(effectiveRoleRank[node.role],[...(rows.get(effectiveRoleRank[node.role])||[]),node]));const required=Math.max(1,...[...rows.values()].map(row=>{const {slotWidth,gap}=rowMetrics(row,vlanAccessLayout);return row.length*slotWidth+Math.max(0,row.length-1)*gap+120}));return Math.max(canvasWidth,required)},[nodes,canvasWidth,effectiveRoleRank,vlanAccessLayout]);
   const hierarchyLayout=useMemo(()=>hierarchyMode?layoutByHierarchy(nodes,hierarchyGroups,canvasWidth,collapsedPodIds):null,[hierarchyMode,nodes,hierarchyGroups,canvasWidth,collapsedPodIds]);
   const layoutWidth=hierarchyLayout?.width||roleLayoutWidth;
-  const positioned=useMemo(()=>hierarchyLayout?.nodes||layoutByRole(nodes,layoutWidth,links,viewHeight,effectiveRoleRank),[hierarchyLayout,nodes,layoutWidth,links,viewHeight,effectiveRoleRank]);
+  const positioned=useMemo(()=>hierarchyLayout?.nodes||layoutByRole(nodes,layoutWidth,links,viewHeight,effectiveRoleRank,vlanAccessLayout),[hierarchyLayout,nodes,layoutWidth,links,viewHeight,effectiveRoleRank,vlanAccessLayout]);
   const positions=useMemo(()=>new Map(positioned.map(node=>[node.id,node])),[positioned]);
+  const regionBounds=useMemo(()=>regions.flatMap(region=>{
+    const members=region.nodeIds.map(id=>positions.get(id)).filter(Boolean) as PositionedNode<T>[];
+    if(!members.length)return[];
+    const paddingX=region.kind==='domain'?42:26;
+    const paddingTop=region.kind==='domain'?50:24;
+    const paddingBottom=region.kind==='domain'?52:34;
+    const minX=Math.min(...members.map(node=>node.x-nodeWidth(node,vlanAccessLayout)/2))-paddingX;
+    const maxX=Math.max(...members.map(node=>node.x+nodeWidth(node,vlanAccessLayout)/2))+paddingX;
+    const minY=Math.min(...members.map(node=>node.y-nodeHeight(node,vlanAccessLayout)/2))-paddingTop;
+    const maxY=Math.max(...members.map(node=>node.y+nodeHeight(node,vlanAccessLayout)/2))+paddingBottom;
+    return[{region,x:Math.max(18,minX),y:Math.max(18,minY),width:Math.min(layoutWidth-18,maxX)-Math.max(18,minX),height:Math.min(viewHeight-18,maxY)-Math.max(18,minY)}];
+  }).sort((a,b)=>a.region.kind==='domain'?-1:b.region.kind==='domain'?1:0),[regions,positions,layoutWidth,viewHeight,vlanAccessLayout]);
   const incidentLinkIds=useMemo(()=>{
     const result=new Map<string,{id:string;port?:string}[]>();
     const add=(nodeId:string,id:string,port?:string)=>result.set(nodeId,[...(result.get(nodeId)||[]),{id,port}]);
@@ -231,25 +270,23 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
     const index=Math.max(0,ids.indexOf(linkId));
     const dx=other.x-endpoint.x;
     const dy=other.y-endpoint.y;
-    const vertical=effectiveRoleRank[endpoint.role]!==effectiveRoleRank[other.role]||Math.abs(dy)>NODE_HEIGHT;
+    const height=nodeHeight(endpoint,vlanAccessLayout);
+    const vertical=effectiveRoleRank[endpoint.role]!==effectiveRoleRank[other.role]||Math.abs(dy)>height;
     if(vertical){
-      const capacity=5;
-      const row=Math.floor(index/capacity);
-      const positionInRow=index%capacity;
-      const centerOut=positionInRow===0?0:Math.ceil(positionInRow/2)*(positionInRow%2===1?-1:1);
-      const x=endpoint.x+centerOut*22+(row%2?4:0);
+      const usableWidth=Math.max(12,nodeWidth(endpoint,vlanAccessLayout)-8);
+      const x=ids.length<=1?endpoint.x:endpoint.x-usableWidth/2+(usableWidth*index)/(ids.length-1);
       const direction=Math.sign(dy)||1;
-      const edgeY=endpoint.y+direction*NODE_HEIGHT/2;
-      return{anchorX:x,anchorY:edgeY,labelX:x,labelY:edgeY+direction*(7+row*9)+2.5};
+      const edgeY=endpoint.y+direction*height/2;
+      return{anchorX:x,anchorY:edgeY,labelX:x,labelY:edgeY+direction*(9+(index%3)*8)+2.5};
     }
-    const capacity=2;
+    const capacity=Math.max(2,Math.floor((height-8)/12));
     const row=Math.floor(index/capacity);
-    const column=index%capacity;
-    const countInRow=Math.min(capacity,Math.max(1,ids.length-row*capacity));
-    const spacing=Math.min(15,(NODE_HEIGHT-8)/Math.max(1,countInRow-1));
-    const y=endpoint.y+(column-(countInRow-1)/2)*spacing;
+    const positionInColumn=index%capacity;
+    const countInColumn=Math.min(capacity,Math.max(1,ids.length-row*capacity));
+    const spacing=Math.min(12,(height-8)/Math.max(1,countInColumn-1));
+    const y=endpoint.y+(positionInColumn-(countInColumn-1)/2)*spacing;
     const direction=Math.sign(dx)||1;
-    const edgeX=endpoint.x+direction*NODE_WIDTH/2;
+    const edgeX=endpoint.x+direction*nodeWidth(endpoint,vlanAccessLayout)/2;
     return{anchorX:edgeX,anchorY:y,labelX:edgeX+direction*(17+row*24),labelY:y+2.5};
   };
   const roleBands=useMemo(()=>{
@@ -261,7 +298,8 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
       const x=container?Math.max(container.x+8,rawX):Math.max(24,rawX);
       const maxX=container?Math.min(container.x+container.width-8,rawMaxX):Math.min(layoutWidth-24,rawMaxX);
       const roles=roleOrder.filter(role=>row.some(node=>node.role===role)).map(role=>roleBandLabels?.[role]||role).join(' / ');
-      return{key,rank,y:row[0].y,x,width:Math.max(80,maxX-x),roles};
+      const height=Math.max(ROLE_BAND_HEIGHT,...row.map(node=>nodeHeight(node,vlanAccessLayout)+28));
+      return{key,rank,y:row[0].y,x,width:Math.max(80,maxX-x),height,roles};
     };
     const bandsFor=(key:string,members:PositionedNode<T>[],containerId:string)=>{
       const ranks=[...new Set(members.map(node=>effectiveRoleRank[node.role]))].sort((a,b)=>a-b);
@@ -278,7 +316,7 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
     });
     const ranks=[...new Set(positioned.map(node=>effectiveRoleRank[node.role]))].sort((a,b)=>a-b);
     return ranks.map(rank=>makeBand(String(rank),positioned.filter(node=>effectiveRoleRank[node.role]===rank)));
-  },[positioned,positions,layoutWidth,hierarchyMode,hierarchyGroups,hierarchyLayout,effectiveRoleRank,roleBandLabels]);
+  },[positioned,positions,layoutWidth,hierarchyMode,hierarchyGroups,hierarchyLayout,effectiveRoleRank,roleBandLabels,vlanAccessLayout]);
   const visibleHierarchyGroups=useMemo(()=>hierarchyGroups.filter(group=>group.level!==2||!group.parentId||!collapsedPodIds.has(group.parentId)),[hierarchyGroups,collapsedPodIds]);
   const hierarchyBounds=useMemo(()=>visibleHierarchyGroups.flatMap(group=>{
     const fixed=hierarchyLayout?.bounds.get(group.id);if(fixed)return[{group,...fixed}];
@@ -293,25 +331,31 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
     return[{group,x,y,width:Math.max(100,Math.min(layoutWidth-24,maxX)-x),height:Math.max(60,Math.min(viewHeight-16,maxY)-y)}];
   }).sort((a,b)=>a.group.level-b.group.level),[visibleHierarchyGroups,positions,layoutWidth,viewHeight,hierarchyLayout]);
   const fittedViewBox=useMemo(()=>{
-    if(!fitToContainer||!hierarchyMode||!hierarchyBounds.length)return `0 0 ${layoutWidth} ${viewHeight}`;
-    const outerBounds=hierarchyBounds.filter(item=>item.group.level===0);
-    const bounds=outerBounds.length?outerBounds:hierarchyBounds;
+    if(!fitToContainer)return `0 0 ${layoutWidth} ${viewHeight}`;
+    const outerRegions=regionBounds.filter(item=>item.region.kind==='domain');
+    const outerHierarchy=hierarchyBounds.filter(item=>item.group.level===0);
+    const bounds=outerRegions.length?outerRegions:outerHierarchy.length?outerHierarchy:regionBounds.length?regionBounds:hierarchyMode?hierarchyBounds:[];
+    if(!bounds.length)return `0 0 ${layoutWidth} ${viewHeight}`;
     const minX=Math.min(...bounds.map(item=>item.x));
     const minY=Math.min(...bounds.map(item=>item.y));
     const maxX=Math.max(...bounds.map(item=>item.x+item.width));
     const maxY=Math.max(...bounds.map(item=>item.y+item.height));
     const contentWidth=maxX-minX;
     const contentHeight=maxY-minY;
-    const paddingX=Math.max(72,contentWidth*0.06);
-    const paddingY=Math.max(104,contentHeight*0.22);
-    return `${minX-paddingX} ${minY-paddingY} ${contentWidth+paddingX*2} ${contentHeight+paddingY*2}`;
-  },[fitToContainer,hierarchyMode,hierarchyBounds,layoutWidth,viewHeight]);
+    const paddingX=vlanAccessLayout?Math.max(36,contentWidth*0.03):Math.max(56,contentWidth*0.05);
+    const paddingY=vlanAccessLayout?Math.max(56,contentHeight*0.14):Math.max(72,contentHeight*0.18);
+    const naturalWidth=contentWidth+paddingX*2;
+    const fittedWidth=regionBounds.length?Math.max(vlanAccessLayout?800:960,naturalWidth):naturalWidth;
+    const horizontalPadding=(fittedWidth-contentWidth)/2;
+    return `${minX-horizontalPadding} ${minY-paddingY} ${fittedWidth} ${contentHeight+paddingY*2}`;
+  },[fitToContainer,hierarchyMode,hierarchyBounds,regionBounds,layoutWidth,viewHeight,vlanAccessLayout]);
   const compactPortLabel=(value:string|undefined)=>value?.replace(/^Ethernet/i,'Et').replace(/^Management/i,'Mgmt')||'Port not reported';
   const hoveredLinkText=hoveredLink?(()=>{
     const sourceLabel=positions.get(hoveredLink.source)?.label||hoveredLink.source;
     const targetLabel=positions.get(hoveredLink.target)?.label||hoveredLink.target;
     const hasPhysicalEndpoint=Boolean(hoveredLink.sourceInterface||hoveredLink.targetInterface);
     const endpoints=hasPhysicalEndpoint?`${sourceLabel} ${compactPortLabel(hoveredLink.sourceInterface)} ↔ ${targetLabel} ${compactPortLabel(hoveredLink.targetInterface)}`:`${sourceLabel} ↔ ${targetLabel}`;
+    if(vlanAccessLayout)return `${sourceLabel}${hoveredLink.sourceInterface?` ${compactPortLabel(hoveredLink.sourceInterface)}`:''} ↔ ${targetLabel}`;
     const meaning=visualMode==='compare'?(hoveredLink.state==='conflict'?(hoveredLink.relationship==='planned'?'Design relationship missing from LLDP':'Unexpected LLDP link'):'Design and LLDP matched'):visualMode==='design'?'Expected logical relationship':visualMode==='lldp'?'LLDP observed':stateLabel[hoveredLink.state];
     return `${endpoints}${hoveredLink.speed?` · ${hoveredLink.speed}`:''} · ${meaning}`;
   })():'';
@@ -327,13 +371,13 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
         {hasPortData&&<><span className="mx-0.5 h-5 w-px bg-slate-200"/>
         <button
           type="button"
-          title={showPortLabels?'Hide all port labels':'Show all port labels'}
-          aria-label={showPortLabels?'Hide all port labels':'Show all port labels'}
+          title={showPortLabels?'Hide all ports':'View all ports'}
+          aria-label={showPortLabels?'Hide all ports':'View all ports'}
           aria-pressed={showPortLabels}
           onClick={()=>setShowPortLabels(value=>!value)}
           className={`flex items-center gap-1.5 rounded px-2 py-1.5 text-[9px] font-medium transition-colors ${showPortLabels?'bg-blue-50 text-blue-700':'text-slate-500 hover:bg-slate-100'}`}
         >
-          {showPortLabels?<Eye size={13}/>:<EyeOff size={13}/>}<span>Port labels</span>
+          {showPortLabels?<Eye size={13}/>:<EyeOff size={13}/>}<span>{showPortLabels?'Hide ports':'View ports'}</span>
         </button></>}
       </div>
     </div>
@@ -342,6 +386,7 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
     </div>}
     <div className={`absolute inset-0 transition-transform ${fitToContainer?'overflow-hidden':'overflow-auto'}`} style={{transform:`scale(${zoom})`,transformOrigin:'center'}}>
       <svg viewBox={fittedViewBox} preserveAspectRatio="xMidYMid meet" className={fitToContainer?'h-full w-full':'h-full'} style={fitToContainer?undefined:{width:`${layoutWidth}px`,minWidth:'100%'}} role="img" aria-label="Registered device topology">
+        {regionBounds.map(({region,x,y,width,height})=>{const server=region.kind==='server';const labelWidth=Math.min(180,Math.max(104,region.label.length*7+30));return <g key={region.id} className="pointer-events-none"><rect x={x} y={y} width={Math.max(100,width)} height={Math.max(60,height)} rx={server?5:11} fill={server?'#f8fafc':'#ffffff66'} stroke="#e2e8f0" strokeWidth="1.1"/>{server?<text x={x+width/2} y={y+height-11} textAnchor="middle" fontSize="11" fontWeight="600" fill="#64748b">{region.label}</text>:<><rect x={x+16} y={y-12} width={labelWidth} height="24" rx="12" fill="#f8fafc" stroke="#e2e8f0"/><text x={x+29} y={y+4} fontSize="10.6" fontWeight="600" fill="#64748b">{region.label}</text></>}</g>})}
         {hierarchyBounds.map(({group,x,y,width,height})=>{
           const collapsed=group.level===1&&collapsedPodIds.has(group.id);
           const selected=group.id===selectedHierarchyGroupId;
@@ -350,18 +395,19 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
           const maxLabelChars=Math.max(6,Math.floor((labelWidth-28)/5.2));
           const displayLabel=group.label.length>maxLabelChars?`${group.label.slice(0,maxLabelChars-1)}…`:group.label;
           const domainCount=collapsed?hierarchyGroups.filter(item=>item.level===2&&item.parentId===group.id).length:0;
-          return <g key={group.id} role="button" tabIndex={0} aria-label={collapsed?`${group.label}, collapsed, double-click to expand`:group.label} className={`${collapsed?'cursor-zoom-in':'cursor-pointer'} outline-none`} onClick={()=>{if(!collapsed)onHierarchyGroupClick?.(group)}} onDoubleClick={event=>{if(collapsed){event.stopPropagation();expandCollapsedPod(group.id)}}} onKeyDown={event=>{if(event.key==='Enter'||event.key===' '){collapsed?expandCollapsedPod(group.id):onHierarchyGroupClick?.(group)}}}>
+          const groupInteractive=Boolean(onHierarchyGroupClick)||collapsed;
+          return <g key={group.id} role={groupInteractive?'button':undefined} tabIndex={groupInteractive?0:undefined} aria-label={collapsed?`${group.label}, collapsed, double-click to expand`:group.label} className={`${collapsed?'cursor-zoom-in':onHierarchyGroupClick?'cursor-pointer':'cursor-default'} outline-none`} onClick={()=>{if(!collapsed)onHierarchyGroupClick?.(group)}} onDoubleClick={event=>{if(collapsed){event.stopPropagation();expandCollapsedPod(group.id)}}} onKeyDown={event=>{if(groupInteractive&&(event.key==='Enter'||event.key===' ')){collapsed?expandCollapsedPod(group.id):onHierarchyGroupClick?.(group)}}}>
           <rect x={x} y={y} width={Math.max(80,width)} height={Math.max(54,height)} rx={12-group.level*2} fill={regionStyle.fill} fillOpacity={selected?0.42:group.level===2?0.22:0.14} stroke={regionStyle.stroke} strokeWidth={selected?2.5:1.25}/>
           <rect x={x+10} y={y-8} width={labelWidth} height="16" rx="8" fill="white" stroke={regionStyle.stroke}/>
           <circle cx={x+19} cy={y} r="3" fill={regionStyle.stroke}/><text x={x+26} y={y+3} fontSize="7.2" fontWeight="600" fill={regionStyle.text}>{displayLabel}</text>
           {collapsed&&<><text x={x+width/2} y={y+48} textAnchor="middle" fontSize="7.2" fontWeight="600" fill="#475569">{group.summary||`${group.nodeIds.length} devices · ${domainCount} domains`}</text><text x={x+width/2} y={y+68} textAnchor="middle" fontSize="6.8" fill="#64748b">Double-click to expand</text></>}
         </g>})}
-        {roleBands.map(band=>hierarchyMode?<g key={band.key} className="pointer-events-none">
-          <rect x={band.x} y={band.y-ROLE_BAND_HEIGHT/2} width={band.width} height={ROLE_BAND_HEIGHT} rx="8" fill="#ffffffa8" stroke="#e2e8f0"/>
-          <text x={band.x+10} y={band.y-NODE_HEIGHT/2-7} fontSize="7.2" fontWeight="600" fill="#64748b">{band.roles}</text>
+        {showRoleBands&&roleBands.map(band=>hierarchyMode?<g key={band.key} className="pointer-events-none">
+          <rect x={band.x} y={band.y-band.height/2} width={band.width} height={band.height} rx="8" fill="#ffffffa8" stroke="#e2e8f0"/>
+          <text x={band.x+10} y={band.y-band.height/2+15} fontSize="7.2" fontWeight="600" fill="#64748b">{band.roles}</text>
         </g>:<g key={band.rank}>
-          <rect x="48" y={band.y-ROLE_BAND_HEIGHT/2} width={layoutWidth-96} height={ROLE_BAND_HEIGHT} rx="8" fill="#ffffffb8" stroke="#e2e8f0"/>
-          <text x="62" y={band.y-ROLE_BAND_HEIGHT/2+15} fontSize="7.2" fontWeight="600" fill="#64748b">{band.roles}</text>
+          <rect x="48" y={band.y-band.height/2} width={layoutWidth-96} height={band.height} rx="8" fill="#ffffffb8" stroke="#e2e8f0"/>
+          <text x="62" y={band.y-band.height/2+15} fontSize="7.2" fontWeight="600" fill="#64748b">{band.roles}</text>
         </g>)}
         {links.map(link=>{
           const source=positions.get(link.source);
@@ -370,28 +416,48 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
           const style=stateStyle[link.state];
           const expected=link.relationship==='expected';
           const planned=link.relationship==='planned';
+          const mlagPeer=link.relationship==='mlag-peer';
           const designVisual=visualMode==='design';
+          const annotated=Boolean(link.annotation);
           const compareConflict=visualMode==='compare'&&link.state==='conflict';
           const selected=link.id===selectedLinkId;
-          const linkStroke=selected?'#2563eb':designVisual?style.stroke:compareConflict?'#dc2626':hierarchyMode?'#64748b':expected?'#2563eb':planned?'#64748b':style.stroke;
-          const linkDash=designVisual?'7 5':compareConflict&&planned?'7 5':expected?'7 5':planned?undefined:style.dash;
-          const linkOpacity=selected?1:compareConflict?0.95:designVisual?0.78:hierarchyMode?0.58:expected?0.62:planned?0.58:0.82;
-          const dx=target.x-source.x;
-          const dy=target.y-source.y;
-          const verticalRoleLink=effectiveRoleRank[source.role]!==effectiveRoleRank[target.role]||Math.abs(dy)>NODE_HEIGHT;
-          const horizontal=verticalRoleLink?false:Math.abs(dx)>Math.abs(dy);
-          const directionX=Math.sign(dx)||1;
-          const directionY=Math.sign(dy)||1;
-          const sourceLineX=source.x+(horizontal?directionX*NODE_WIDTH/2:0);
-          const sourceLineY=source.y+(horizontal?0:directionY*NODE_HEIGHT/2);
-          const targetLineX=target.x-(horizontal?directionX*NODE_WIDTH/2:0);
-          const targetLineY=target.y-(horizontal?0:directionY*NODE_HEIGHT/2);
-          const revealPortLabels=showPortLabels||hoveredLink?.id===link.id;
-          return <g key={link.id} className="cursor-pointer transition-opacity" opacity={focusedState&&link.state!==focusedState?0.12:1} onMouseEnter={()=>setHoveredLink(link)} onMouseLeave={()=>setHoveredLink(null)} onClick={()=>onLinkClick?.(link)}>
-          <line x1={sourceLineX} y1={sourceLineY} x2={targetLineX} y2={targetLineY} stroke={linkStroke} strokeWidth={selected?3:hierarchyMode?1.6:expected?1.7:planned?1.5:2.2} strokeDasharray={linkDash} opacity={linkOpacity}/>
-          <line x1={sourceLineX} y1={sourceLineY} x2={targetLineX} y2={targetLineY} stroke="transparent" strokeWidth="16"/>
-          {showLinkBadges&&link.speed&&<><rect x={(source.x+target.x)/2-23} y={(source.y+target.y)/2-8} width="46" height="15" rx="7" fill="white" stroke="#e2e8f0"/>
-          <text x={(source.x+target.x)/2} y={(source.y+target.y)/2+3} textAnchor="middle" fontSize="6.8" fill="#64748b">{link.speed}</text></>}
+          const linkStroke=selected?'#2563eb':annotated?'#cbd5e1':designVisual?style.stroke:compareConflict?'#dc2626':hierarchyMode?'#64748b':expected?'#2563eb':planned||mlagPeer?'#64748b':style.stroke;
+          const linkDash=mlagPeer?'6 4':annotated?undefined:designVisual?'7 5':compareConflict&&planned?'7 5':expected?'7 5':planned?undefined:style.dash;
+          const linkOpacity=selected?1:annotated?1:compareConflict?0.95:designVisual?0.78:hierarchyMode?0.58:expected?0.62:planned||mlagPeer?0.58:0.82;
+          const sourcePort=getPortPlacement(source,target,link.id);
+          const targetPort=getPortPlacement(target,source,link.id);
+          const sourceLineX=sourcePort.anchorX;
+          const sourceLineY=sourcePort.anchorY;
+          const targetLineX=targetPort.anchorX;
+          const targetLineY=targetPort.anchorY;
+          const lineLength=Math.hypot(targetLineX-sourceLineX,targetLineY-sourceLineY)||1;
+          const parallelOffsetX=-(targetLineY-sourceLineY)/lineLength*3;
+          const parallelOffsetY=(targetLineX-sourceLineX)/lineLength*3;
+          const sourceDegree=links.filter(candidate=>candidate.relationship==='planned'&&(candidate.source===link.source||candidate.target===link.source)).length;
+          const targetDegree=links.filter(candidate=>candidate.relationship==='planned'&&(candidate.source===link.target||candidate.target===link.target)).length;
+          const useFanoutCurve=vlanAccessLayout&&designVisual&&planned&&!mlagPeer&&(sourceDegree>1||targetDegree>1);
+          const verticalDelta=targetLineY-sourceLineY;
+          const horizontalDelta=targetLineX-sourceLineX;
+          const curveSourceX=useFanoutCurve&&sourceDegree>1?source.x+(sourceLineX-source.x)*0.4:sourceLineX;
+          const curveTargetX=useFanoutCurve&&targetDegree>1?target.x:targetLineX;
+          const annotationX=useFanoutCurve?curveTargetX:(sourceLineX+targetLineX)/2;
+          const accessPlannedLayout=vlanAccessLayout&&designVisual&&planned;
+          const annotationY=accessPlannedLayout?sourceLineY+verticalDelta*0.64:(sourceLineY+targetLineY)/2;
+          const annotationHalfWidth=vlanAccessLayout?54:47;
+          const annotationInnerWidth=annotationHalfWidth-6;
+          const splitAtAnnotation=useFanoutCurve&&Boolean(link.annotation?.subtitle);
+          const curveEndY=splitAtAnnotation?annotationY-22:targetLineY;
+          const curveDelta=curveEndY-sourceLineY;
+          const curveSourceControlX=curveSourceX+(curveTargetX-curveSourceX)*0.34;
+          const curveSourceControlY=sourceLineY+curveDelta*0.1;
+          const curveTargetControlY=curveEndY-curveDelta*0.42;
+          const lowerConnector=splitAtAnnotation?` M ${curveTargetX} ${annotationY+22} L ${targetLineX} ${targetLineY}`:'';
+          const curvePath=`M ${curveSourceX} ${sourceLineY} C ${curveSourceControlX} ${curveSourceControlY}, ${curveTargetX} ${curveTargetControlY}, ${curveTargetX} ${curveEndY}${lowerConnector}`;
+          return <g key={link.id} className={`${onLinkClick?'cursor-pointer':'cursor-default'} transition-opacity`} opacity={focusedState&&link.state!==focusedState?0.12:1} onMouseEnter={()=>setHoveredLink(link)} onMouseLeave={()=>setHoveredLink(null)} onClick={()=>onLinkClick?.(link)}>
+          {mlagPeer?<><line x1={sourceLineX+parallelOffsetX} y1={sourceLineY+parallelOffsetY} x2={targetLineX+parallelOffsetX} y2={targetLineY+parallelOffsetY} stroke={linkStroke} strokeWidth={selected?2.4:1.5} strokeDasharray={linkDash} opacity={linkOpacity}/><line x1={sourceLineX-parallelOffsetX} y1={sourceLineY-parallelOffsetY} x2={targetLineX-parallelOffsetX} y2={targetLineY-parallelOffsetY} stroke={linkStroke} strokeWidth={selected?2.4:1.5} strokeDasharray={linkDash} opacity={linkOpacity}/></>:useFanoutCurve?<path d={curvePath} fill="none" stroke={linkStroke} strokeWidth={selected?3:planned?1.5:2.2} strokeDasharray={linkDash} strokeLinecap="round" opacity={linkOpacity}/>:<line x1={sourceLineX} y1={sourceLineY} x2={targetLineX} y2={targetLineY} stroke={linkStroke} strokeWidth={selected?3:hierarchyMode?1.6:expected?1.7:planned?1.5:2.2} strokeDasharray={linkDash} opacity={linkOpacity}/>}
+          {useFanoutCurve?<path d={curvePath} fill="none" stroke="transparent" strokeWidth="16"/>:<line x1={sourceLineX} y1={sourceLineY} x2={targetLineX} y2={targetLineY} stroke="transparent" strokeWidth="16"/>}
+          {showLinkBadges&&link.annotation?<g className="pointer-events-none"><title>{link.annotation.subtitle?`${link.annotation.title} · ${link.annotation.subtitle}`:link.annotation.title}</title>{link.annotation.subtitle?<><rect x={annotationX-annotationHalfWidth} y={annotationY-21} width={annotationHalfWidth*2} height="42" rx="6" fill="#ffffff" stroke="#cbd5e1" strokeWidth="1.2"/><path d={`M ${annotationX-annotationInnerWidth} ${annotationY-21} H ${annotationX+annotationInnerWidth} Q ${annotationX+annotationHalfWidth} ${annotationY-21} ${annotationX+annotationHalfWidth} ${annotationY-15} V ${annotationY-1} H ${annotationX-annotationHalfWidth} V ${annotationY-15} Q ${annotationX-annotationHalfWidth} ${annotationY-21} ${annotationX-annotationInnerWidth} ${annotationY-21} Z`} fill="#edf7f6"/><line x1={annotationX-annotationHalfWidth} y1={annotationY} x2={annotationX+annotationHalfWidth} y2={annotationY} stroke="#dbe7e6" strokeWidth="1"/><text x={annotationX} y={annotationY-8} textAnchor="middle" fontSize={vlanAccessLayout?'11.4':'10.4'} fontWeight="700" fill="#06706d">{link.annotation.title.length>12?`${link.annotation.title.slice(0,11)}…`:link.annotation.title}</text><text x={annotationX} y={annotationY+14} textAnchor="middle" fontSize={vlanAccessLayout?'10':'9.2'} fontWeight="600" fill="#475569">{link.annotation.subtitle.length>18?`${link.annotation.subtitle.slice(0,17)}…`:link.annotation.subtitle}</text></>:<><rect x={annotationX-26} y={annotationY-13} width="52" height="26" rx="4" fill="#f8fafc" stroke="#cbd5e1"/><text x={annotationX} y={annotationY+4} textAnchor="middle" fontSize={vlanAccessLayout?'11.4':'10.4'} fontWeight="600" fill="#475569">{link.annotation.title}</text></>}</g>:showLinkBadges&&link.speed&&<><rect x={annotationX-23} y={annotationY-8} width="46" height="15" rx="7" fill="white" stroke="#e2e8f0"/>
+          <text x={annotationX} y={annotationY+3} textAnchor="middle" fontSize="6.8" fill="#64748b">{link.speed}</text></>}
         </g>})}
         {links.map(link=>{
           const source=positions.get(link.source);
@@ -400,23 +466,28 @@ const TopologyCanvas = <T,>({nodes,links,hierarchyGroups=[],rolePresentation,sel
           if(!source||!target||!revealPortLabels||(!link.sourceInterface&&!link.targetInterface))return null;
           const sourcePort=getPortPlacement(source,target,link.id);
           const targetPort=getPortPlacement(target,source,link.id);
+          const sourcePortCount=incidentLinkIds.get(source.id)?.length||1;
+          const vlanPortLabelOffset=sourcePortCount<=1?35:sourcePortCount<=4?37:39;
+          const vlanAnnotationY=sourcePort.anchorY+(targetPort.anchorY-sourcePort.anchorY)*0.64;
+          const vlanSourcePort=vlanAccessLayout&&link.relationship==='planned'?{...sourcePort,labelX:targetPort.anchorX,labelY:vlanAnnotationY-vlanPortLabelOffset}:sourcePort;
           const compareConflict=visualMode==='compare'&&link.state==='conflict';
           const renderPortLabel=(label:string|undefined,endpoint:PositionedNode<T>,placement:ReturnType<typeof getPortPlacement>,side:'source'|'target')=>{
             if(!label)return null;
-            return <text key={`${link.id}-${side}`} x={placement.labelX} y={placement.labelY} textAnchor="middle" fontSize="6.5" fontWeight="600" fill={compareConflict?'#b91c1c':'#334155'} stroke="white" strokeWidth="2.8" strokeLinejoin="round" paintOrder="stroke" className="pointer-events-none"><title>{endpoint.label} · {label}</title>{compactPortLabel(label)}</text>;
+            return <text key={`${link.id}-${side}`} x={placement.labelX} y={placement.labelY} textAnchor="middle" fontSize={vlanAccessLayout?'9':'6.5'} fontWeight={vlanAccessLayout?'500':'600'} fill={compareConflict?'#b91c1c':'#334155'} stroke="white" strokeWidth={vlanAccessLayout?'3.2':'2.8'} strokeLinejoin="round" paintOrder="stroke" className="pointer-events-none"><title>{endpoint.label} · {label}</title>{compactPortLabel(label)}</text>;
           };
-          return <g key={`ports-${link.id}`} opacity={focusedState&&link.state!==focusedState?0.12:1}>{renderPortLabel(link.sourceInterface,source,sourcePort,'source')}{renderPortLabel(link.targetInterface,target,targetPort,'target')}</g>;
+          return <g key={`ports-${link.id}`} opacity={focusedState&&link.state!==focusedState?0.12:1}>{renderPortLabel(link.sourceInterface,source,vlanSourcePort,'source')}{renderPortLabel(link.targetInterface,target,targetPort,'target')}</g>;
         })}
-        {positioned.map(node=>{ const style=stateStyle[node.state]; const selected=node.id===selectedNodeId; const displayLabel=node.label.length>18?`${node.label.slice(0,17)}…`:node.label; const nodeStroke=visualMode==='compare'&&node.state==='conflict'?'#dc2626':selected?'#2563eb':style.stroke; const nodeDash=visualMode==='design'?'6 4':style.dash; return <g key={node.id} role="button" tabIndex={0} className="cursor-pointer outline-none transition-opacity" opacity={focusedState&&node.state!==focusedState?0.12:1} onClick={()=>onNodeClick?.(node)} onKeyDown={event=>{if(event.key==='Enter'||event.key===' ')onNodeClick?.(node)}}>
-          <rect x={node.x-NODE_WIDTH/2} y={node.y-NODE_HEIGHT/2} width={NODE_WIDTH} height={NODE_HEIGHT} rx="8" fill={style.fill} stroke={nodeStroke} strokeWidth={selected?2.5:1.5} strokeDasharray={nodeDash}/>
-          <foreignObject x={node.x-NODE_WIDTH/2+9} y={node.y-8} width="16" height="16"><div className="flex h-4 w-4 items-center justify-center text-slate-500">{node.role==='Endpoint'?<Network size={12}/>:<Server size={12}/>}</div></foreignObject>
-          <text x={node.x-NODE_WIDTH/2+31} y={node.y+3} fontSize="7.2" fontWeight="600" fill="#334155">{displayLabel}</text>
-          <circle cx={node.x+NODE_WIDTH/2-10} cy={node.y-NODE_HEIGHT/2+9} r="3" fill={style.stroke}/>
+        {positioned.map(node=>{ const style=stateStyle[node.state]; const selected=node.id===selectedNodeId; const displayLabel=node.label.length>18?`${node.label.slice(0,17)}…`:node.label; const nodeStroke=visualMode==='compare'&&node.state==='conflict'?'#dc2626':selected?'#2563eb':style.stroke; const nodeDash=visualMode==='design'?'6 4':style.dash; const nodeInteractive=Boolean(onNodeClick); const interaction={role:nodeInteractive?'button':undefined,tabIndex:nodeInteractive?0:undefined,onClick:()=>onNodeClick?.(node),onKeyDown:(event:React.KeyboardEvent<SVGGElement>)=>{if(nodeInteractive&&(event.key==='Enter'||event.key===' '))onNodeClick?.(node)}}; if(node.variant==='device')return <g key={node.id} {...interaction} className={`${nodeInteractive?'cursor-pointer':'cursor-default'} outline-none transition-opacity`} opacity={focusedState&&node.state!==focusedState?0.12:1}><text x={node.x} y={node.y-(vlanAccessLayout?40:35)} textAnchor="middle" fontSize={vlanAccessLayout?'10.8':'12.4'} fontWeight={vlanAccessLayout?'400':'650'} fill="#475569">{displayLabel}</text><circle cx={node.x} cy={node.y} r={vlanAccessLayout?28:24} fill={selected?'#d9efed':'#edf7f6'} stroke={selected?'#06706d':'#0f7f7b'} strokeWidth={selected?2.8:1.8}/><foreignObject x={node.x-(vlanAccessLayout?16:14)} y={node.y-(vlanAccessLayout?16:14)} width={vlanAccessLayout?32:28} height={vlanAccessLayout?32:28}><div className={vlanAccessLayout?'flex h-8 w-8 items-center justify-center':'flex h-7 w-7 items-center justify-center'}><Network size={vlanAccessLayout?28:24} strokeWidth={1.9} color="#06706d"/></div></foreignObject><title>{node.label}{node.subtitle&&` · ${node.subtitle}`} · {stateLabel[node.state]}</title></g>; if(node.variant==='nic')return <g key={node.id} {...interaction} className={`${nodeInteractive?'cursor-pointer':'cursor-default'} outline-none transition-opacity`} opacity={focusedState&&node.state!==focusedState?0.12:1}><rect x={node.x-(vlanAccessLayout?54:46)} y={node.y-(vlanAccessLayout?24:21)} width={vlanAccessLayout?108:92} height={vlanAccessLayout?48:42} rx="5" fill="#f8fafc" stroke={selected?'#2563eb':'#cbd5e1'} strokeWidth={selected?2.6:1.4}/><text x={node.x} y={node.y+4} textAnchor="middle" fontSize={vlanAccessLayout?'10.4':'11.8'} fontWeight={vlanAccessLayout?'400':'650'} fill="#475569">{displayLabel}</text><title>{node.label}{node.subtitle&&` · ${node.subtitle}`} · {stateLabel[node.state]}</title></g>; const height=nodeHeight(node); const top=node.y-height/2; const hasPorts=Boolean(node.ports?.length); return <g key={node.id} {...interaction} className={`${nodeInteractive?'cursor-pointer':'cursor-default'} outline-none transition-opacity`} opacity={focusedState&&node.state!==focusedState?0.12:1}>
+          <rect x={node.x-NODE_WIDTH/2} y={top} width={NODE_WIDTH} height={height} rx="8" fill={style.fill} stroke={nodeStroke} strokeWidth={selected?2.5:1.5} strokeDasharray={nodeDash}/>
+          <foreignObject x={node.x-NODE_WIDTH/2+9} y={hasPorts?top+5:node.y-8} width="16" height="16"><div className="flex h-4 w-4 items-center justify-center text-slate-500">{node.icon==='network'||(!node.icon&&node.role==='Endpoint')?<Network size={12}/>:<Server size={12}/>}</div></foreignObject>
+          <text x={node.x-NODE_WIDTH/2+31} y={hasPorts?top+16:node.y+3} fontSize="7.2" fontWeight="600" fill="#334155">{displayLabel}</text>
+          <circle cx={node.x+NODE_WIDTH/2-10} cy={top+9} r="3" fill={style.stroke}/>
+          {hasPorts&&<><line x1={node.x-NODE_WIDTH/2+8} y1={top+24} x2={node.x+NODE_WIDTH/2-8} y2={top+24} stroke="#dbe4ee"/>{node.ports!.map((port,index)=>{const row=Math.floor(index/PORT_COLUMNS);const rowPorts=node.ports!.slice(row*PORT_COLUMNS,(row+1)*PORT_COLUMNS);const column=index%PORT_COLUMNS;const chipWidth=9;const chipGap=3;const rowWidth=rowPorts.length*chipWidth+Math.max(0,rowPorts.length-1)*chipGap;const x=node.x-rowWidth/2+column*(chipWidth+chipGap);const y=top+29+row*12;return <g key={port}><rect x={x} y={y} width={chipWidth} height="9" rx="2" fill="white" stroke="#94a3b8"/><text x={x+chipWidth/2} y={y+6.4} textAnchor="middle" fontSize="4.8" fontWeight="600" fill="#475569">{port.replace(/^NIC-?/i,'')}</text><title>{port}</title></g>})}</>}
           <title>{node.label}{node.subtitle&&` · ${node.subtitle}`} · {stateLabel[node.state]}</title>
         </g>})}
       </svg>
     </div>
-    {!hierarchyMode&&<div className="absolute bottom-3 left-3 z-20 flex max-w-[calc(100%-1.5rem)] flex-nowrap items-center gap-x-1 overflow-x-auto whitespace-nowrap rounded-lg border border-slate-200 bg-white/95 px-2 py-1.5 text-[8px] text-slate-500 shadow-sm">
+    {showLegend&&!hierarchyMode&&<div className="absolute bottom-3 left-3 z-20 flex max-w-[calc(100%-1.5rem)] flex-nowrap items-center gap-x-1 overflow-x-auto whitespace-nowrap rounded-lg border border-slate-200 bg-white/95 px-2 py-1.5 text-[8px] text-slate-500 shadow-sm">
       {focusedState&&<button onClick={()=>setFocusedState(null)} className="rounded px-2 py-1 font-semibold text-blue-700 hover:bg-blue-50">Show all</button>}
       {(Object.keys(stateLabel) as TopologyNodeState[]).map(state=>{const available=availableStates.includes(state);return <button key={state} type="button" disabled={!available} aria-pressed={focusedState===state} title={available?`${stateDescription[state]} Click to ${focusedState===state?'show all':'focus this state'}.`:`${stateDescription[state]} This state is not present in the current topology.`} onClick={()=>setFocusedState(current=>current===state?null:state)} className={`flex items-center gap-1 rounded px-2 py-1 transition ${focusedState===state?'bg-blue-50 font-semibold text-blue-700 ring-1 ring-blue-200':available?'hover:bg-slate-50':'cursor-default opacity-45'}`}><i className="h-2 w-2 rounded-full" style={{background:stateStyle[state].stroke}}/>{stateLabel[state]}</button>})}
       {links.some(link=>link.relationship==='expected')&&<span title="Uncertain adjacency preview from Inventory discovery" className="flex items-center gap-1 px-2 text-blue-700"><i className="h-0 w-4 border-t border-dashed border-blue-600"/>Inventory discovery preview</span>}

@@ -39,7 +39,7 @@ const App: React.FC = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [activeSiteId, setActiveSiteId] = useState<string | null>('bj-dc');
   const [activePlugin, setActivePlugin] = useState<PluginID | 'base'>('aidc-network');
-  const [activeFeature, setActiveFeature] = useState<CoreFeature | string>('overview');
+  const [activeFeature, setActiveFeature] = useState<CoreFeature | string>('network-design');
   
   // Global Subscription State
   const [subscribedPlugins, setSubscribedPlugins] = useState<PluginID[]>(['campus-network', 'security-surveillance', 'aidc-network', 'idc-network', 'transport-network']);

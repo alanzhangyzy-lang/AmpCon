@@ -5,6 +5,11 @@ import AIDCProvisioning from './AIDCProvisioning';
 import AIDCStudio2 from './AIDCStudio2';
 import AIDCNetworkDesign from './AIDCNetworkDesign';
 import { createInitialInventoryTopologyState, InventoryTopologyState } from './AIDCInventoryTopology';
+import { AIDCFabricState, createInitialAIDCFabricState } from './aidcFabricState';
+import { createInitialRocePolicyDraft, RocePolicyDraft } from './RoceLosslessPolicyStudio';
+import { createInitialVlanAccessDraft, VlanAccessDraft } from './AIDCVlanAccessStudio';
+import { createInitialVlanServicesDraft, VlanServicesDraft } from './AIDCVlanServicesStudio';
+import { createInitialInterfaceConfigurationDraft, InterfaceConfigurationDraft } from './InterfaceConfigurationStudio';
 import { AIDC_FABRIC_01, aidcDeviceName } from './aidcTopologyDomain';
 import {
   Cpu, Activity, Zap, Shield, Network, BarChart3, TrendingUp,
@@ -82,11 +87,17 @@ const DashboardToolbar = () => {
 
 const AIRoceApp: React.FC<AIRoceAppProps> = ({ site, feature, onNavigate }) => {
   const [inventoryState,setInventoryState] = useState<InventoryTopologyState>(()=>createInitialInventoryTopologyState());
+  const [fabricState,setFabricState] = useState<AIDCFabricState>(()=>createInitialAIDCFabricState());
+  const [rocePolicyDraft,setRocePolicyDraft] = useState<RocePolicyDraft>(()=>createInitialRocePolicyDraft());
+  const [vlanAccessDraft,setVlanAccessDraft] = useState<VlanAccessDraft>(()=>createInitialVlanAccessDraft());
+  const [roceAccess2Draft,setRoceAccess2Draft] = useState<VlanAccessDraft>(()=>createInitialVlanAccessDraft('AIDC RoCE Access 2'));
+  const [vlanServicesDraft,setVlanServicesDraft] = useState<VlanServicesDraft>(()=>createInitialVlanServicesDraft());
+  const [interfaceConfigurationDraft,setInterfaceConfigurationDraft] = useState<InterfaceConfigurationDraft>(()=>createInitialInterfaceConfigurationDraft());
   if (feature === 'overview') return <AIDCDashboard site={site} />;
-  if (feature === 'network-design') return <AIDCNetworkDesign site={site} onNavigate={onNavigate} inventoryState={inventoryState} onInventoryStateChange={setInventoryState} />;
-  if (feature === 'studio2') return <AIDCStudio2 site={site} onNavigate={onNavigate} inventoryState={inventoryState} onInventoryStateChange={setInventoryState} />;
+  if (feature === 'network-design') return <AIDCNetworkDesign site={site} onNavigate={onNavigate} inventoryState={inventoryState} onInventoryStateChange={setInventoryState} fabricState={fabricState} onFabricStateChange={setFabricState} rocePolicyDraft={rocePolicyDraft} onRocePolicyDraftChange={setRocePolicyDraft} />;
+  if (feature === 'studio2' || feature === 'studios') return <AIDCStudio2 site={site} onNavigate={onNavigate} inventoryState={inventoryState} onInventoryStateChange={setInventoryState} fabricState={fabricState} onFabricStateChange={setFabricState} rocePolicyDraft={rocePolicyDraft} onRocePolicyDraftChange={setRocePolicyDraft} vlanAccessDraft={vlanAccessDraft} onVlanAccessDraftChange={setVlanAccessDraft} roceAccess2Draft={roceAccess2Draft} onRoceAccess2DraftChange={setRoceAccess2Draft} vlanServicesDraft={vlanServicesDraft} onVlanServicesDraftChange={setVlanServicesDraft} interfaceConfigurationDraft={interfaceConfigurationDraft} onInterfaceConfigurationDraftChange={setInterfaceConfigurationDraft} />;
   if (feature.startsWith('workspaces:')) return <AIDCProvisioning site={site} feature="workspaces" initialWorkspaceId={decodeURIComponent(feature.slice('workspaces:'.length))} />;
-  if (['studios', 'workspaces', 'tasks', 'change-control'].includes(feature)) return <AIDCProvisioning site={site} feature={feature} />;
+  if (['workspaces', 'tasks', 'change-control'].includes(feature)) return <AIDCProvisioning site={site} feature={feature} />;
 
   if (feature === 'overview') {
     const [loadTab, setLoadTab] = useState<'CPU'|'内存'|'温度'>('CPU');

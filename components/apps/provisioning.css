@@ -148,3 +148,195 @@
     outline-color: Highlight !important;
   }
 }
+
+/* VLAN Access network controls share a two-column system and respond to their panel width. */
+.provisioning-readable .vlan-network-panel {
+  container: vlan-network / inline-size;
+}
+
+.provisioning-readable .vlan-network-toolbar,
+.provisioning-readable .vlan-network-summary {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.85fr) minmax(230px, 1.15fr);
+  gap: 0.5rem;
+}
+
+.provisioning-readable .vlan-network-toolbar {
+  align-items: end;
+}
+
+.provisioning-readable .vlan-network-toolbar__network-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.5rem;
+}
+
+.provisioning-readable .vlan-network-summary__vlan {
+  grid-column: 1;
+}
+
+.provisioning-readable .vlan-network-summary__ip {
+  grid-column: 2;
+}
+
+@container vlan-network (max-width: 400px) {
+  .provisioning-readable .vlan-network-toolbar,
+  .provisioning-readable .vlan-network-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .provisioning-readable .vlan-network-toolbar__domain,
+  .provisioning-readable .vlan-network-toolbar__network-actions,
+  .provisioning-readable .vlan-network-summary__vlan,
+  .provisioning-readable .vlan-network-summary__ip {
+    grid-column: 1;
+  }
+}
+
+/* Interface Configuration keeps the RoCE Studio workbench readable on smaller
+ * viewports. The outer viewport owns structural two-axis scrolling while device
+ * and interface tables retain local scrolling for long datasets.
+ */
+.provisioning-readable.interface-studio-viewport {
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.provisioning-readable .interface-studio-canvas {
+  width: 100%;
+  height: 100%;
+  min-width: 1480px;
+  min-height: 100%;
+}
+
+/* VLAN Access keeps a readable desktop canvas instead of compressing or hiding data.
+ * The component viewport owns structural two-axis scrolling; tables and topology retain
+ * their own local scrolling for long datasets and oversized graphs.
+ */
+.provisioning-readable.vlan-studio-viewport {
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
+
+.provisioning-readable .vlan-studio-canvas {
+  width: 100%;
+  height: 100%;
+  min-width: 1740px;
+  min-height: 920px;
+}
+
+/* Horizontal-navigation comparison variant: recover the former sidebar width while
+ * preserving compact tables and a readable topology panel. */
+.provisioning-readable .vlan-studio-canvas--horizontal {
+  min-width: 1480px;
+  min-height: 1040px;
+}
+
+/* Compact workbench baseline: data tables use only the width their content needs;
+ * the topology retains the larger share so nodes and labels remain readable. */
+.provisioning-readable .vlan-studio-content-grid {
+  min-width: 1416px;
+  min-height: 680px;
+}
+
+.provisioning-readable .vlan-content-pane,
+.provisioning-readable .vlan-plan-panel,
+.provisioning-readable .vlan-network-recommended-panel,
+.provisioning-readable .vlan-confirm-panel {
+  min-width: 560px;
+  min-height: 650px;
+}
+
+.provisioning-readable .vlan-topology-panel {
+  min-width: 820px;
+  min-height: 650px;
+}
+
+.provisioning-readable .vlan-network-table,
+.provisioning-readable .vlan-confirm-table {
+  min-width: 530px;
+  min-height: 360px;
+  overflow-x: auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.provisioning-readable .vlan-network-table tbody tr {
+  height: 40px;
+}
+
+.provisioning-readable .vlan-confirm-table tbody tr {
+  height: 44px;
+}
+
+.provisioning-readable .vlan-network-table thead th,
+.provisioning-readable .vlan-confirm-table thead th {
+  white-space: nowrap;
+}
+
+/* Allocation needs room for its two working lists: table header plus eight device rows. */
+.provisioning-readable .vlan-studio-canvas--allocation {
+  min-height: 1000px;
+}
+
+.provisioning-readable .vlan-studio-canvas--horizontal.vlan-studio-canvas--allocation {
+  min-height: 1100px;
+}
+
+.provisioning-readable .vlan-allocation-grid {
+  min-width: 940px;
+  min-height: 464px;
+}
+
+.provisioning-readable .vlan-allocation-site,
+.provisioning-readable .vlan-allocation-selected {
+  min-width: 430px;
+  min-height: 464px;
+}
+
+.provisioning-readable .vlan-allocation-site tbody tr,
+.provisioning-readable .vlan-allocation-selected tbody tr {
+  height: 44px;
+}
+
+/* Device Allocation lists scroll independently and keep the vertical track visible. */
+.provisioning-readable .vlan-allocation-site > div:last-child,
+.provisioning-readable .vlan-allocation-selected > div:last-child {
+  min-height: 384px;
+  overflow-x: auto;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  scrollbar-color: #94a3b8 #f1f5f9;
+  scrollbar-width: auto;
+}
+
+.provisioning-readable .vlan-allocation-site > div:last-child::-webkit-scrollbar,
+.provisioning-readable .vlan-allocation-selected > div:last-child::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.provisioning-readable .vlan-allocation-site > div:last-child::-webkit-scrollbar-track,
+.provisioning-readable .vlan-allocation-selected > div:last-child::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-left: 1px solid #e2e8f0;
+}
+
+.provisioning-readable .vlan-allocation-site > div:last-child::-webkit-scrollbar-thumb,
+.provisioning-readable .vlan-allocation-selected > div:last-child::-webkit-scrollbar-thumb {
+  border: 2px solid #f1f5f9;
+  border-radius: 999px;
+  background: #94a3b8;
+}
+
+.provisioning-readable .vlan-allocation-site > div:last-child::-webkit-scrollbar-thumb:hover,
+.provisioning-readable .vlan-allocation-selected > div:last-child::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

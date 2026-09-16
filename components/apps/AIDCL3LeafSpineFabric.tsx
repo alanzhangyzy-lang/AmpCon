@@ -3,40 +3,17 @@ import { ArrowLeft, Building2, Check, ChevronDown, ChevronLeft, ChevronRight, Gi
 import TopologyCanvas, { TopologyHierarchyGroup, TopologyLink, TopologyNode } from '../topology/TopologyCanvas';
 import { Device } from './AIDCInventoryTopology';
 import { createFabricHierarchyGroups } from './l3FabricHierarchyDomain';
-import { AIDC_FABRIC_01, AIDC_LEAF_IDS, AIDC_SPINE_IDS, aidcDeviceName } from './aidcTopologyDomain';
+import { AIDC_FABRIC_01, aidcDeviceName } from './aidcTopologyDomain';
+import {
+  AIDCFabricState, DataCenter, DcConfiguration, LeafDomain, LeafDomainType, Pod, PodConfiguration,
+  defaultAdvancedSettings, defaultPlatformSettings, defaultPodConfiguration, makeDcConfiguration,
+} from './aidcFabricState';
 
-type LeafDomainType = 'L3'|'L2';
-type LeafDomain = { id:string; name:string; type:LeafDomainType; asn:string; mlag:boolean; leafIds:string[] };
-type PodConfiguration = { name:string; loopbackPool:string; p2pPool:string; vtepPool:string; spanningTreeMode:string; spineIds:string[] };
-type Pod = PodConfiguration & { id:string; domains:LeafDomain[] };
-type SuperSpinePlane = { id:string; name:string; asn:string; deviceIds:string[] };
-type PlatformSettings = { profile:string; eosImage:string; managementVrf:string; ntpServers:string };
-type AdvancedSettings = {
-  bgpPeerGroup:{name:string;password:string;bfd:boolean};
-  interfaceDescriptions:{spineToLeaf:string;mlagPeer:string};
-  p2pInterfaces:{mtu:string;ipv6Unnumbered:boolean};
-  mlag:{peerLinkPortChannelId:string;reloadDelay:string};
-};
-type DcConfiguration = { name:string; superSpinePlanes:SuperSpinePlane[]; platformSettings:PlatformSettings; advancedSettings:AdvancedSettings };
-type DataCenter = DcConfiguration & { id:string; podDefault:PodConfiguration; pods:Pod[] };
 type ValidationState = 'none'|'valid'|'warning'|'error';
 type Selection = { kind:'devices'|'root'|'dc-default' } | { kind:'dc';dcId:string } | { kind:'pod-default';dcId:string } | { kind:'pod';dcId:string;podId:string } | { kind:'domain';dcId:string;podId:string;domainId:string };
 type ConfigSelection = Exclude<Selection,{kind:'devices'|'root'}>;
 type CreateDraft = { kind:'dc'|'pod'|'domain';dcId?:string;podId?:string;domainType?:LeafDomainType;name:string };
-type Props = { workspace:string;devices:Device[];links:TopologyLink[];onBack:()=>void;onReviewWorkspace?:()=>void };
-
-const defaultPodConfiguration:PodConfiguration={name:'Pod Default',loopbackPool:'10.255.0.0/24',p2pPool:'10.255.16.0/20',vtepPool:'10.255.1.0/24',spanningTreeMode:'MSTP',spineIds:[]};
-const defaultPlatformSettings:PlatformSettings={profile:'Arista validated L3LS',eosImage:'EOS 4.33.1F',managementVrf:'MGMT',ntpServers:'10.0.0.10, 10.0.0.11'};
-const defaultAdvancedSettings:AdvancedSettings={
-  bgpPeerGroup:{name:'UNDERLAY-PEERS',password:'',bfd:true},
-  interfaceDescriptions:{spineToLeaf:'P2P_LINK_TO_{peer}',mlagPeer:'MLAG_PEER_{peer}'},
-  p2pInterfaces:{mtu:'9214',ipv6Unnumbered:false},
-  mlag:{peerLinkPortChannelId:'2000',reloadDelay:'300'},
-};
-const makeDcConfiguration=(name:string):DcConfiguration=>({name,superSpinePlanes:[{id:'plane-a',name:'Plane A',asn:'65000',deviceIds:[]}],platformSettings:{...defaultPlatformSettings},advancedSettings:{bgpPeerGroup:{...defaultAdvancedSettings.bgpPeerGroup},interfaceDescriptions:{...defaultAdvancedSettings.interfaceDescriptions},p2pInterfaces:{...defaultAdvancedSettings.p2pInterfaces},mlag:{...defaultAdvancedSettings.mlag}}});
-const seedFabric:DataCenter[]=[{id:AIDC_FABRIC_01.dcId,...makeDcConfiguration(AIDC_FABRIC_01.dcName),podDefault:{...defaultPodConfiguration},pods:[
-  {id:AIDC_FABRIC_01.podId,name:AIDC_FABRIC_01.podName,spineIds:AIDC_SPINE_IDS,loopbackPool:'10.255.0.0/24',p2pPool:'10.255.16.0/20',vtepPool:'10.255.1.0/24',spanningTreeMode:'MSTP',domains:[{id:AIDC_FABRIC_01.domainId,name:AIDC_FABRIC_01.domainName,type:'L3',asn:'65101',mlag:false,leafIds:AIDC_LEAF_IDS}]},
-]}];
+type Props = { workspace:string;devices:Device[];links:TopologyLink[];fabricState:AIDCFabricState;onFabricStateChange:React.Dispatch<React.SetStateAction<AIDCFabricState>>;initialDataCenterId?:string;onBack:()=>void;onReviewWorkspace?:()=>void };
 
 const uid=(prefix:string)=>`${prefix}-${Date.now()}-${Math.random().toString(36).slice(2,6)}`;
 const inputClass='mt-1 w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-[10px] text-slate-700 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100';
@@ -50,15 +27,19 @@ const NavigationRow=({label,description,onClick,tone='blue'}:{label:string;descr
   return <button onClick={onClick} className={`flex w-full items-center justify-between gap-4 rounded-md border border-slate-200 bg-white px-3 py-3 text-left transition-colors ${hoverTone}`}><span className="min-w-0"><b className="block truncate text-[10px] text-slate-700">{label}</b>{description&&<span className="mt-0.5 block text-[8px] text-slate-400">{description}</span>}</span><ChevronRight size={14} className="shrink-0 text-slate-400"/></button>;
 };
 
-const AIDCL3LeafSpineFabric:React.FC<Props>=({workspace,devices,links,onBack,onReviewWorkspace})=>{
-  const [dataCenters,setDataCenters]=useState<DataCenter[]>(seedFabric);
-  const [dcDefault,setDcDefault]=useState<DcConfiguration>(()=>makeDcConfiguration('Data Center Default'));
-  const [selection,setSelection]=useState<Selection>({kind:'dc',dcId:AIDC_FABRIC_01.dcId});
-  const [expanded,setExpanded]=useState<Set<string>>(()=>new Set([AIDC_FABRIC_01.dcId,AIDC_FABRIC_01.podId,`${AIDC_FABRIC_01.podId}-l3-domains`,`${AIDC_FABRIC_01.podId}-l2-domains`]));
+const AIDCL3LeafSpineFabric:React.FC<Props>=({workspace,devices,links,fabricState,onFabricStateChange,initialDataCenterId,onBack,onReviewWorkspace})=>{
+  const dataCenters=fabricState.dataCenters;
+  const initialDcId=initialDataCenterId&&dataCenters.some(dc=>dc.id===initialDataCenterId)?initialDataCenterId:dataCenters[0]?.id;
+  const setDataCenters=(action:React.SetStateAction<DataCenter[]>)=>onFabricStateChange(current=>({...current,dataCenters:typeof action==='function'?(action as (value:DataCenter[])=>DataCenter[])(current.dataCenters):action}));
+  const dcDefault=fabricState.dcDefault;
+  const setDcDefault=(action:React.SetStateAction<DcConfiguration>)=>onFabricStateChange(current=>({...current,dcDefault:typeof action==='function'?(action as (value:DcConfiguration)=>DcConfiguration)(current.dcDefault):action}));
+  const studioDeviceIds=useMemo(()=>new Set(fabricState.studioDeviceIds),[fabricState.studioDeviceIds]);
+  const setStudioDeviceIds=(action:React.SetStateAction<Set<string>>)=>onFabricStateChange(current=>{const value=new Set(current.studioDeviceIds);const next=typeof action==='function'?(action as (value:Set<string>)=>Set<string>)(value):action;return{...current,studioDeviceIds:[...next]}});
+  const [selection,setSelection]=useState<Selection>(()=>initialDcId?{kind:'dc',dcId:initialDcId}:{kind:'root'});
+  const [expanded,setExpanded]=useState<Set<string>>(()=>new Set([initialDcId,AIDC_FABRIC_01.podId,`${AIDC_FABRIC_01.podId}-l3-domains`,`${AIDC_FABRIC_01.podId}-l2-domains`].filter((id):id is string=>Boolean(id))));
   const [createDraft,setCreateDraft]=useState<CreateDraft|null>(null);
   const [query,setQuery]=useState('');
   const [deviceQuery,setDeviceQuery]=useState('');
-  const [studioDeviceIds,setStudioDeviceIds]=useState<Set<string>>(()=>new Set([...AIDC_SPINE_IDS,...AIDC_LEAF_IDS]));
   const [selectedDeviceId,setSelectedDeviceId]=useState<string>();
   const [selectedLink,setSelectedLink]=useState<TopologyLink|null>(null);
   const [changeCount,setChangeCount]=useState(0);
@@ -79,7 +60,7 @@ const AIDCL3LeafSpineFabric:React.FC<Props>=({workspace,devices,links,onBack,onR
   const firstSection=(next:ConfigSelection)=>next.kind==='domain'?'overview':'overview';
   const openConfiguration=(next:ConfigSelection,section?:string)=>{setSelection(next);setEditorSection(section||firstSection(next));setEditorOpen(true);setSelectedDeviceId(undefined);setSelectedLink(null)};
   const closeConfiguration=()=>{setEditorOpen(false);setEditorMaximized(false)};
-  const saveConfiguration=(close=false)=>{setSaved(true);if(close)closeConfiguration()};
+  const saveConfiguration=(close=false)=>{if(!saved||changeCount>0)onFabricStateChange(current=>({...current,revision:current.revision+1,updatedAt:new Date().toISOString()}));setSaved(true);setChangeCount(0);if(close)closeConfiguration()};
   const navigateEditorBack=()=>{
     if(editorSection!=='overview'){setEditorSection('overview');return}
     if(selection.kind==='domain')return openConfiguration({kind:'pod',dcId:selection.dcId,podId:selection.podId},`${selectedDomain?.type.toLowerCase()||'l3'}-domains`);
@@ -202,7 +183,7 @@ const AIDCL3LeafSpineFabric:React.FC<Props>=({workspace,devices,links,onBack,onR
   };
   const toggleStudioDevice=(deviceId:string)=>{
     const removing=studioDeviceIds.has(deviceId);setStudioDeviceIds(current=>{const next=new Set(current);removing?next.delete(deviceId):next.add(deviceId);return next});
-    if(removing)setDataCenters(current=>current.map(dc=>({...dc,podDefault:{...dc.podDefault,spineIds:dc.podDefault.spineIds.filter(id=>id!==deviceId)},superSpinePlanes:dc.superSpinePlanes.map(plane=>({...plane,deviceIds:plane.deviceIds.filter(id=>id!==deviceId)})),pods:dc.pods.map(pod=>({...pod,spineIds:pod.spineIds.filter(id=>id!==deviceId),domains:pod.domains.map(domain=>({...domain,leafIds:domain.leafIds.filter(id=>id!==deviceId)}))}))})));
+    if(removing){setDcDefault(current=>({...current,superSpinePlanes:current.superSpinePlanes.map(plane=>({...plane,deviceIds:plane.deviceIds.filter(id=>id!==deviceId)}))}));setDataCenters(current=>current.map(dc=>({...dc,podDefault:{...dc.podDefault,spineIds:dc.podDefault.spineIds.filter(id=>id!==deviceId)},superSpinePlanes:dc.superSpinePlanes.map(plane=>({...plane,deviceIds:plane.deviceIds.filter(id=>id!==deviceId)})),pods:dc.pods.map(pod=>({...pod,spineIds:pod.spineIds.filter(id=>id!==deviceId),domains:pod.domains.map(domain=>({...domain,leafIds:domain.leafIds.filter(id=>id!==deviceId)}))}))})))}
     markChanged();
   };
   const visibleDeviceCandidates=devices.filter(device=>{const text=`${device.hostname} ${device.managementIp} ${device.mac} ${device.model} ${device.role} ${device.customRole||''}`.toLowerCase();return !deviceQuery||text.includes(deviceQuery.toLowerCase())});

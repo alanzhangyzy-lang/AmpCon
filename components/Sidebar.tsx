@@ -207,7 +207,7 @@ const aidcMenu: MenuItem[] = [
     children: [
       {
         items: [
-          { icon: <Network size={16} />, label: 'Network Design', feature: 'network-design' },
+          { icon: <Network size={16} />, label: 'Network Designs', feature: 'network-design' },
           { icon: <LayoutGrid size={16} />, label: 'Studios', feature: 'studio2' },
           { icon: <Layers size={16} />, label: 'Workspaces', feature: 'workspaces' },
           { icon: <FileText size={16} />, label: 'Tasks', feature: 'tasks' },

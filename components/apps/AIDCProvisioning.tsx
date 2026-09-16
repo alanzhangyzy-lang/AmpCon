@@ -32,8 +32,11 @@ export const studioCardStatusById: Record<string, StudioCardStatus> = {
   'STD-NF-002': 'Update Available',
   'STD-NF-003': 'In Use',
   'STD-AI-002': 'In Use',
+  'STD-AI-004': 'In Workspace',
+  'STD-AI-005': 'Not In Use',
   'STD-NS-001': 'In Workspace',
   'STD-NS-002': 'Not In Use',
+  'STD-NS-003': 'Not In Use',
 };
 export const studioStatusMeta: Record<StudioCardStatus, { dot: string; text: string; description: string }> = {
   'In Use': { dot: 'bg-emerald-500', text: 'text-emerald-700', description: 'Submitted mainline inputs are assigned to one or more devices.' },
@@ -64,6 +67,9 @@ export const aristaStudioGroups: { title: string; items: CatalogStudio[] }[] = [
   ]},
   { title: 'Network Services', items: [
     { id:'STD-AI-002', name:'RoCE Lossless Policy', category:'AIDC', description:'Configure lossless Ethernet policy inputs including PFC, ECN, DCQCN, buffer behavior and MTU for AI fabric interfaces.', scope:'RoCE-capable device and interface tags', workspace:'—', status:'In Use', updated:'Yesterday', lastSubmitted:'Yesterday by operator', active:true },
+    { id:'STD-AI-004', name:'RoCE Access', category:'AIDC', description:'Plan bare-metal RoCE access VLANs, generate per-Leaf VLAN and gateway values, allocate Fabric Leaf devices, and preview the resulting topology.', scope:'Fabric Leaf devices and downlink interfaces', workspace:'WS-AIDC-021', status:'In Workspace', updated:'Just now', lastSubmitted:'Not yet submitted', active:false },
+    { id:'STD-AI-005', name:'RoCE Access 2', category:'AIDC', description:'Evaluate the RoCE access workflow with a compact horizontal step navigator while retaining the same planning, allocation and topology behavior.', scope:'Fabric Leaf devices and downlink interfaces', workspace:'—', status:'Available', updated:'Just now', lastSubmitted:'Not yet submitted', active:false },
+    { id:'STD-NS-003', name:'VLAN Services', category:'AIDC', description:'Define VLAN networks, optional SVI gateways and their deployment scope across an L3 leaf-spine fabric.', scope:'Fabric, Pod, Domain and Leaf scopes', workspace:'—', status:'Available', updated:'Just now', lastSubmitted:'Not yet submitted', active:false },
     { id:'STD-NS-001', name:'EVPN Services', category:'AIDC', description:'Define and configure EVPN services for an L3 network fabric, including configuration of VRFs, VLANs, VNIs and associated IP addresses.', scope:'Network service tags', workspace:'—', status:'In Use', updated:'1 week ago', lastSubmitted:'1 week ago by operator', active:true },
     { id:'STD-NS-002', name:'Segment Security', category:'AIDC', description:'Define and configure group-based multi-domain segmentation service policies.', scope:'Segment tags', workspace:'—', status:'Available', updated:'Never', lastSubmitted:'Not yet submitted', active:false },
   ]},
