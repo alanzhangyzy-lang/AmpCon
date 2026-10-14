@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:gh-pages": "vite build --base=/AmpCon/",
     "preview": "vite preview",
-    "deploy": "vite build && gh-pages -d dist --no-history"
+    "deploy": "npm run build:gh-pages && gh-pages -d dist"
   },
   "dependencies": {
     "lucide-react": "^0.562.0",
