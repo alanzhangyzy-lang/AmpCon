@@ -1,535 +1,289 @@
-# STD-AI-006 VLAN Services 软件需求规格说明书（SR）
+# STD-AI-006 VLAN Services 软件需求规格说明书（当前实现基线）
 
 | 项目 | 内容 |
 |---|---|
 | 文档编号 | SR-AMPCON-AIDC-VLAN-SERVICES-001 |
 | Studio ID | `STD-AI-006` |
 | Studio 名称 | `VLAN Services` |
-| 版本 | v2.1 |
-| 日期 | 2026-09-16 |
-| 状态 | Draft |
+| 版本 | v2.2 |
+| 日期 | 2026-10-20 |
+| 状态 | Implementation baseline / Draft |
 | 适用产品 | AmpCon-DC AIDC Network |
+| 实现依据 | `components/apps/AIDCVlanServicesStudio.tsx` |
 
-## 目录
+## 1. 文档目的与范围
 
-1. 背景与产品目标
-2. SR 清单
-   - 2.1 SR 表单拆解
-   - 2.2 依赖与前置条件
-   - 2.3 功能限制条件
-3. 信息架构与页面流程
-4. 功能需求详述
-   - 4.1 VLAN Service Profiles
-   - 4.2 Profile Configuration
-   - 4.3 Select Devices & Interfaces
-   - 4.4 Device & Interface
-5. 功能评审（Review）
+本文档描述当前代码库中 `VLAN Services` 的**实际前端行为**，并将尚未实现的 CloudVision 生命周期能力明确列为缺口；它不将目标态能力描述为已交付能力。
 
-> 本 SR 定义 `VLAN Services` Studio 的产品目标态，不包含验收标准和测试矩阵。VLAN Services 是 AmpCon 面向 AIDC 的产品扩展，不应解释为 Arista CloudVision 原生 Studio。
+`VLAN Services` 是 AmpCon 的 AIDC 配置原型，不是 Arista CloudVision 原生 Studio。它在当前实现中维护本地 `VlanServicesDraft` 草稿，包含 Network VLAN/SVI、VLAN Service Profile、设备/接口 Profile 归属和 Direct 接口覆盖值。
 
-## 1. 背景与产品目标
+### 1.1 当前版本与截图差异
 
-### 1.1 背景
+当前主界面是 **Device & Interface** 的设备、端口及 Profile 管理视图。已选 Profile 的端口配置字段保持只读；将端口 Profile 设为 `None` 后，该端口按 Direct 方式允许编辑 Description、Port Mode、VLAN/Native VLAN、Allowed VLANs 和 MTU。
 
-AIDC 接入网络必须面向大量 Leaf、双归接入设备和业务端口持续交付 VLAN 服务。Profile 应复用 Access/Trunk、VLAN、Gateway 与 MTU 意图；Sequential Allocation 应按稳定逻辑单元顺序派生 VLAN/Gateway；Direct Configuration 应支持无 Profile 设备的逐接口配置。
+此前截图所示“这里不允许单独对接口配置进行编辑，只能应用模板”与当前实现不一致。该截图对应的限制已被撤回；本 SR 以当前代码行为为准，而非以该截图中的限制为准。
 
-VLAN Services 必须以 CloudVision Studio 结构化输入表达意图，并保存为 Workspace 候选变更。Workspace Build 必须作为配置生成、设备能力、ownership 与跨配置源冲突的权威校验；Review/Submit 必须绑定固定 revision；提交后的变更应进入 Change Control 审批与执行，最终状态必须由 Running/Compliance 回采确定。
+### 1.2 CloudVision 生命周期边界
 
-### 1.2 产品目标
+Arista CloudVision 的官方 Workflow 将 Workspace 用于承载 Studio 变更，提交后由 Change Control 审批或拒绝；Change Control 可关联任务并在执行时提供配置会话/回退上下文。当前 VLAN Services 前端**没有**这些后端对象或调用，因此不可把“Saved”或本地时间戳解释为 CloudVision Workspace 保存、Build、Submit、Task、Change Control 执行、回滚或 Running/Compliance 回采。
 
-1. Profile、Sequential Generated Value、Interface Override 和 Direct Configuration 必须形成可追踪的配置模型。
-2. Profile 对设备的 ownership 与接口配置 scope 必须分离：设备只能归属一个 Profile，且只允许为 `interfaceAssignments` 中的接口生成配置。
-3. Inventory/Fabric 必须作为设备、canonical interface、角色、拓扑和 M-LAG 关系的事实源；Studio 只保存稳定引用与业务意图。
-4. 有效 M-LAG Pair 必须联选并作为一个 sequence unit；关键值、接口能力和权限必须满足双端对称规则。
-5. Save/Apply 只应提交 Workspace 候选事务，不得表示 Build、Submit、设备执行或 Running 生效。
-6. Intent Center 只允许表达业务意图并调用 Studio，不得拥有设备配置；Templates & CLI 必须作为独立高级配置源汇入共同 Workspace、Change Control 与合规生命周期。
-7. AmpCon Tasks 如存在，必须作为 Workspace/Change Control 或 Provisioning Action 的映射对象；不得声称每个 Studio 变更必然生成 Classic Task。
+- 当前实现：本地草稿状态、前端校验、500 ms 防抖自动写回父级 draft、显示本地 `lastAppliedAt` 时间。
+- 未实现：Workspace revision/baseline/ETag、服务端 RBAC、Build、不可变 Review revision、Submit、Tasks 映射、Change Control、执行、回滚和 Running/Compliance 回采。
+- Intent Center 仅应表达业务意图并调用 Studio；Templates & CLI 应作为独立高级配置源汇入共同生命周期。上述集成属于后续实现，不由本组件模拟。
 
-## 2. SR 清单
+官方语义参考：[Arista CloudVision Workflow Overview](https://www.arista.com/jp/cg-cv/cv-workflow-overview?searchword=cv%20overview)、[Arista CloudVision Change Control](https://www.arista.com/zh/cg-cv/cv-using-the-change-control-module?searchword=cv%20task%20management%20cvp)。内容已按许可要求转述。
 
+## 2. 当前数据模型与对象边界
 
-### 2.1 SR 表单拆解
+### 2.1 草稿对象
 
-| SR编号 | 一级功能 | 二级功能 | 主要表单/操作 |
-|---|---|---|---|
-| SR-VLAN-001 | VLAN Service Profiles | Profile List | Create、Search、Edit、Delete |
-| SR-VLAN-002 | Profile Configuration | Basic Profile | Name、Description、Port Mode、MTU |
-| SR-VLAN-003 | Profile Configuration | VLAN & Gateway | VLAN/Native VLAN、Allowed VLANs、Gateway |
-| SR-VLAN-004 | Profile Configuration | Sequential Allocation | VLAN Step、Gateway Step、Device Order |
-| SR-VLAN-005 | Select Devices & Interfaces | Device Selection | Role、Order、Search、M-LAG Pair |
-| SR-VLAN-006 | Select Devices & Interfaces | Interface Selection | Search、Capability Intersection、Scope Preview |
-| SR-VLAN-007 | Device & Interface | Profile Assignment | Profile Picker、Device/Interface Selection、Apply Profile |
-| SR-VLAN-008 | Device & Interface | Port Configuration | Value Sources、Effective Value、Override、Reset |
-| SR-VLAN-009 | Device & Interface | Direct Configuration | 无 Profile 设备的逐接口配置、Remove、Reset |
+| 对象 | 当前字段/用途 | 当前持久化语义 |
+|---|---|---|
+| `VlanServicesDraft` | 配置名称、Fabric ID、Profile 集合、Network 默认值、`networkSviBindings`、`directInterfaceAssignments`、`lastAppliedAt` | 通过 `onDraftChange` 写入父组件状态；无服务端 API。 |
+| `VlanService` | Profile 名称/说明、Access 或 Trunk、VLAN、Allowed VLAN、MTU、SVI bindings、步长、设备顺序、设备与接口归属 | 作为草稿内嵌 Profile 保存。 |
+| `VlanSviBinding` | VLAN ID、描述、SVI IPv4/CIDR、步长、M-LAG 与两节点地址 | Network 与 Profile 分别维护，当前没有统一服务端对象。 |
+| `VlanInterfaceAssignment` | `deviceId`、`interfaceNames`、可选字段 override、`assignmentScope` | 表示某个 Profile 或 Direct 的接口范围。 |
+| `VlanInterfaceOverride` | Description、模式、VLAN、Allowed VLAN、Gateway、MTU 的覆盖字段 | 当前 Active UI 仅让 Direct 端口编辑；Profile override 数据结构存在但无完整编辑界面。 |
 
-### 2.2 依赖与前置条件
+### 2.2 事实源和当前限制
 
-| 依赖项 | 前置条件与职责 |
-|---|---|
-| Workspace | 必须提供可读/可写状态、revision、baseline、Studio overlay、ETag、Build 状态及 RBAC。 |
-| Inventory | 必须提供设备稳定 ID、hostname、管理地址、型号、角色、平台与设备可见性。 |
-| Fabric / M-LAG | 必须提供 Fabric membership、M-LAG Pair、peer 状态及两端关系。 |
-| Interface/Capability | 必须提供 canonical interface ID、存在性、breakout、模式、VLAN、SVI 和 MTU 能力。 |
-| Configuration Ownership | 必须提供 Studio、Templates & CLI 及其他配置源的 ownership 和冲突信息。 |
-| Change Control / Compliance | 必须提供审批、执行、回滚上下文以及 Running/Compliance 回采。 |
+- 设备来自 `inventoryState.registered`，显示 hostname、management IP、model、role 和接口数量。
+- 已发现接口名来自拓扑连接；同时会按设备接口数生成 `Ethernet1` 至 `EthernetN`（最多 128 个）候选名。
+- M-LAG 分组优先来自 `fabricState` 中标记为 M-LAG 的 domain；当前还存在以 `AIDC-GPU-Leaf-01/02` 名称推测 `assumed-gpu-mlag-101` 的前端兜底。
+- 当前没有 canonical interface ID、接口能力目录、breakout、平台能力交集、外部 Studio/Intent/Templates & CLI ownership 或服务端权限事实源。
 
-### 2.3 功能限制条件
+因此，生成的 `EthernetN` 在当前 UI 可直接用于选择；它不是经过 CloudVision Inventory/Capability/Build 证实的 canonical interface。
 
-| 规则 | 说明 |
-|---|---|
-| Workspace 前置条件 | 必须选择可写 Workspace 才能创建、编辑、删除、Apply Profile 或保存 Studio 输入；不得直接在 Mainline、Designed 或设备 Running 配置上修改。 |
-| Fabric 与 Inventory 范围 | 设备、角色、canonical interface、连接和 M-LAG 事实必须来自固定的 Fabric/Inventory snapshot；Studio 不得手工伪造设备、接口或 M-LAG 关系。 |
-| Profile Ownership | 一台设备同一时刻只能归属一个 VLAN Service Profile；Profile 与 Direct Configuration 不得同时拥有同一设备接口。 |
-| Interface Scope | Profile 只能对 `interfaceAssignments` 中已分配的 canonical interface 生成配置；设备归属不等于自动配置设备全部接口。 |
-| Access 模式 | Access 接口必须具有 VLAN 和 MTU；Allowed VLANs 不适用；VLAN ID 必须在 1–4094 范围内。 |
-| Trunk 模式 | Trunk 接口必须具有 Native VLAN、非空 Allowed VLANs 和 MTU；Allowed VLANs 必须规范化为合法、去重、升序的 VLAN 集合。 |
-| Gateway 与地址规划 | Gateway 必须是合法 IPv4/CIDR；Gateway 为空表示 Layer 2 only。本期不配置 VRF、IP Helpers、Address Pool 或未经能力确认的 `mlag-virtual` 模式。 |
-| VLAN/Gateway Step | VLAN 与 Gateway Step 必须按逻辑分配单元计算，不得按物理设备数量计算；设备排序、成员关系或 M-LAG 关系变化后必须重新计算并显示影响。 |
-| M-LAG Pair 有效性 | 有效 Pair 必须恰好包含两台可访问、可写的 Leaf；选择任一成员必须联选完整 Pair；Pair 两端作为一个逻辑分配单元共享 VLAN/Gateway sequence value。 |
-| M-LAG 对称性 | Pair 两端的 interface scope、Port Mode、VLAN/Native VLAN、规范化 Allowed VLANs、Gateway、MTU 和设备能力必须一致；Description 可独立。 |
-| M-LAG ID 展示 | Device & Interface 设备列表必须以 `M-LAG 01`、`M-LAG 02` 等稳定 Pair ID 标识多组 M-LAG；同一 Pair 两端显示相同 ID，非 M-LAG 显示 `—`。该列不得展示步长、Sequence 或 VLAN/IP 派生值。 |
-| M-LAG 异常门禁 | 只选择一端、Peer 不可见/不可写、Domain 非法、共同接口缺失或能力不对称时，整组必须标红并禁用 Apply/Save；展开 Pair 必须可查看两台成员、Peer 状态和接口映射。 |
-| Generated Interface 限制 | `EthernetN` 等 Generated Name 只能作为候选名称；必须经 Inventory、Capability 和 Build 验证后才能成为目标接口，不得伪装成已发现接口。 |
-| Override 与 Direct | 必须区分继承、显式 Override 和 Explicit Clear；必须提供 Reset/Remove。Direct Configuration 仅允许无 Profile 设备使用，并必须满足 Access 或 Trunk 的最小有效字段。 |
-| Direct 与 M-LAG | Direct 用于 M-LAG 时，关键字段必须联写双端对应 canonical interface 并通过双端能力/权限校验；Description 可独立。 |
-| 迁移与删除 | Direct→Profile 迁移、Profile 切换、Profile 删除和 Assignment 移除必须预览影响、检测冲突、要求确认并以原子事务保存；不得静默覆盖或部分迁移。 |
-| 设备能力与配置源冲突 | 表单通用范围不代表设备支持。Build 必须复核接口模式、VLAN、SVI、MTU、breakout、地址冲突，以及与其他 Studio、Intent Center、Templates & CLI 的 ownership 冲突。 |
-| 生命周期限制 | Save/Apply 只保存 Workspace candidate；Build 生成候选配置；Review/Submit 固定 revision；只有 Change Control 执行并完成设备回采后，才可显示已部署、Running 更新或 Compliant。 |
-| Tasks 对象边界 | AmpCon Tasks 如存在，只能映射 Workspace revision 或 Change Control 执行对象；不得宣称每个 Studio 变更必然生成 Arista Classic Task。 |
-
-## 3. 信息架构与页面流程
-
-### 3.1 页面结构
+## 3. 页面结构与状态
 
 ```text
 VLAN Services
-├─ Profile Configuration
-│  ├─ VLAN Service Profiles
-│  ├─ Profile Configuration
-│  └─ Select Devices & Interfaces
-├─ Assignment
-│  └─ Device & Interface
-│     ├─ Device List
-│     └─ Interface Detail
-└─ Workspace Context
-   ├─ Local Dirty / Save State / Build State
-   ├─ Save
-   └─ Review / Submit
+├─ Workspace 选择与本地保存状态
+├─ Configuration
+│  ├─ VLAN Service Profiles（列表/详情代码存在，若干编辑入口当前禁用）
+│  └─ Network
+│     ├─ Workspace Network VLAN/SVI bindings
+│     └─ 已选 Profile 的只读 Network 视图
+└─ Device & Interface
+   ├─ Select Devices 对话框
+   ├─ 选中设备/M-LAG 列表
+   └─ 接口表：Profile 继承或 Direct 编辑
 ```
 
-Selector 必须在 Profile Configuration 和需要创建或调整接口 scope 的 Apply Profile 流程中提供可见入口。
+### 3.1 Workspace 门禁与本地保存状态
 
-### 3.2 标准操作流程
+1. 用户从 `AIDC_WORKSPACE_OPTIONS` 选择非空 Workspace 后，主要可写控件才可用。
+2. 每次 `commit` 都会清空 `lastAppliedAt`，并将更新交给 `onDraftChange`。
+3. 草稿通过本地校验后，会在 500 ms 防抖后写入当前浏览器时间作为 `lastAppliedAt`。
+4. 头部可显示 `Saving...`、`Unsaved changes`、`Saved` 或 `Not saved`。其中 `Saved` 仅表示当前前端草稿已自动写回父级状态，不代表设备或 CloudVision Workspace 已保存。
+5. `Review Workspace` 按钮当前固定禁用；即使提供 `onReviewWorkspace` 回调，也不会从 UI 调用。
+
+### 3.2 当前状态定义
+
+| 显示状态 | 当前含义 | 不代表 |
+|---|---|---|
+| `Not saved` | 该草稿尚未记录本地 `lastAppliedAt`。 | CloudVision 未保存或未部署的权威状态。 |
+| `Unsaved changes` | 草稿正在变更或本地校验未通过。 | revision 冲突、Build 失败或设备差异。 |
+| `Saved` | 自动保存逻辑写入了浏览器时间。 | Workspace revision、Build 完成、Submit 或执行完成。 |
+| `Mixed` | 设备列表摘要中的多个有效值。 | 可提交配置值。 |
+
+## 4. 当前功能需求
+
+### SR-VLAN-001：VLAN Service Profiles
+
+#### 4.1 当前可见行为
+
+| 功能 | 当前行为 | 限制 |
+|---|---|---|
+| Profile 列表 | 可搜索、自然排序、查看名称、描述、模式、VLAN、Allowed VLAN、SVI 及编辑入口。 | 只呈现草稿对象，无 revision 或服务端查询。 |
+| 打开 Profile | 点击名称或 Edit 进入 Profile Configuration。 | 不做引用、权限或版本检查。 |
+| Create Profile | 选择 Workspace 后可创建，并进入新 Profile 配置页。 | 新 Profile 保留可识别的默认名称；VLAN、Native VLAN、MTU、SVI binding 与 Gateway 为空，需由用户填写。 |
+| Delete Profile | 删除函数存在并会使用浏览器确认框。当前最终 UI 的 Delete 按钮为 `disabled={true}`。 | 没有引用影响预览、原子服务端事务或外部引用检查。 |
+| 基础字段编辑 | 未被设备或接口 assignment 引用的 Profile，可在已选 Workspace 中编辑名称、说明、Port Mode、MTU、VLAN、Native VLAN、Allowed VLAN 及 Gateway List 字段。 | 已被引用的 Profile 保持只读，避免改变现有接口继承值；当前无引用影响预览或版本控制。 |
+
+#### 4.2 Profile 默认值和派生逻辑
+
+初始草稿的 `createService(index)` 仍使用 Access、`VLAN 100 + index × 10`、MTU 9216 和一条空 SVI binding，作为初始 `VLAN Service Profile 1` 的演示基线。用户通过 Create Profile 新增的对象改用 `createBlankService(index)`：保留默认名称与 Access 模式，但 VLAN、Native VLAN、MTU、SVI binding 与 Gateway 均为空。两种名称规则都只按当前 Profile 个数生成，不保证删除后重建仍唯一。
+
+Profile 的有效值算法仍存在：
 
 ```text
-打开可写 Workspace 与固定 baseline
-→ 编辑 VLAN Services 结构化输入
-→ Save/Apply 原子保存 candidate revision
-→ Workspace Build 权威生成与校验
-→ Review 固定 Built revision → Submit 固定 revision
-→ Change Control 审批、排期与执行
-→ Running/Compliance 回采与差异定位
+Profile 字段 override（若存在）
+→ 顺序派生的 VLAN/Gateway（若启用 step）
+→ Profile 基础值
 ```
 
-Studio 不得将候选保存解释为设备生效。Workspace 提交后应进入 Change Control；相关生命周期语义参见 [Arista CloudVision Workflow Overview](https://www.arista.com/zh/cg-cv/cv-workflow-overview) 与 [Studio Elements and Functions](https://www.arista.com/jp/cg-cv/cv-studio-elements-and-functions)。
+- `vlanStepEnabled` 启用时：基础 VLAN 加上 `allocationIndex × vlanStep`。
+- `gatewayStepEnabled` 启用时：以 IPv4/CIDR host 值为基础，按 `allocationIndex × gatewayStep × 子网大小` 计算。
+- 有效 M-LAG Pair 的两台设备共用 allocation index。
+- `assignmentScope === 'interface'` 时，接口名排序后的 offset 会参与 allocation index。
 
-### 3.3 页面与生命周期边界
+当前 UI 未完整展示 Base/Generated/Override/Effective 的分层来源，也没有 Reset-to-inherited 或 Explicit Clear 操作。
 
-| 阶段 | 权威对象 | 产品要求 |
+### SR-VLAN-002：Workspace Network 与 VLAN/SVI Bindings
+
+#### 4.3 Network 视图
+
+当已选择 Workspace 且未处于 Profile 只读视图时，Network 区可维护 `networkSviBindings`。
+
+| 控件/字段 | 当前交互 | 校验/限制 |
 |---|---|---|
-| Local Editing | 客户端编辑会话 | Local Dirty 必须只表示相对已保存 revision 的未保存变更。 |
-| Save/Apply | Workspace candidate | 必须以 revision/ETag 原子提交 Studio overlay；成功不代表配置已生成。 |
-| Build | Workspace Build | 必须权威校验结构化输入、能力、ownership、M-LAG 和跨源冲突，并生成候选配置。 |
-| Review/Submit | 固定 revision | Review 内容和 Submit 操作必须绑定同一不可变 revision；revision 变化后必须重新 Review。 |
-| Change Control | CloudVision/AmpCon 编排 | 必须负责审批、排期、执行、日志和回滚；Studio 不得自行声明执行完成。 |
-| Running/Compliance | 设备回采与合规服务 | 必须基于 Running 状态与 Built/Submitted 意图比较，不得由保存时间推断。 |
+| VLAN Ranges | 只读汇总已配置 VLAN ID。 | 汇总为合并后的连续范围文本。 |
+| Add VLAN | 新增一条空的 Network binding。 | Workspace 未选择或正在查看 Profile 时禁用。 |
+| Delete VLAN | 删除已勾选 binding。 | 保留至少一条 binding；查看 Profile 时禁用。 |
+| VLAN ID | 直接编辑 1–4094。 | Gateway 存在时 VLAN 必填；不可与其他 Network binding 重复。 |
+| Description | 可编辑。 | 无额外长度/能力校验。 |
+| SVI IP | 可编辑 IPv4/CIDR。 | 必须为可用主机地址；不可重复。空值表示 L2-only。 |
+| M-LAG | 有 SVI IP 时可开关。 | 开启时计算默认 Node 1/Node 2 地址；节点地址当前无完整设备能力校验。 |
+| Batch Add VLAN | 对话框和批量生成函数存在。 | 对话框中的提交按钮当前固定禁用，不能从 UI 执行批量添加。 |
 
-## 4. 功能需求详述
+#### 4.4 Network 与 Direct 默认值
 
-### 4.1 VLAN Service Profiles
+Direct 端口以 Network 值作为初始有效值：
 
-#### 4.1.1 功能说明
+- Port Mode：`networkPortMode`，默认 `access`。
+- Access VLAN 或 Native VLAN：首条 `networkSviBindings` 的 VLAN ID。
+- Allowed VLANs：`networkAllowedVlans`。
+- Gateway：第一条具有非空 gateway 的 Network binding。
+- MTU：`networkMtu`，默认 9216。
 
-创建、搜索、打开和删除 VLAN Service Profile，并汇总 Profile、设备 ownership 与接口 scope 数量。
+用户对 Direct 端口写入的字段放入 `directInterfaceAssignments.overrides`，并覆盖相应 Network 默认值。
 
-#### 4.1.2 产品设计及流程说明
+### SR-VLAN-003：Select Devices
 
-Profile 必须是 Workspace 中的结构化对象。Profile 名称在 Workspace scope 内必须按 Trim 后的规范化值唯一。创建时，默认名称与默认 VLAN 必须从可用值中确定；系统不得仅按列表长度生成，也不得因删除后重建发生碰撞。默认 VLAN 只是候选值，保存和 Build 必须继续校验 VLAN、子网与 ownership 冲突。
+#### 4.5 对话框与选择规则
 
-删除 Profile 必须展示受影响设备、接口、override 和外部引用，支持定位引用并要求确认。删除事务失败时必须保留原对象及引用，不得形成部分删除。产品允许删除全部 Profile；无 Profile 时仍允许使用 Direct Configuration。
+`Select Devices` 在已选 Workspace 时可由 Device & Interface 页的 `Select Devices` 按钮打开。
 
-#### 4.1.3 功能业务流程
-
-```text
-进入 Configuration → 搜索或打开 Profile
-→ Create Profile 获取唯一候选默认值 → 编辑详情与 scope
-→ Save candidate → Build
-或 Delete → 查看影响与引用 → 确认 → 原子保存
-```
-
-#### 4.1.4 原型界面与交互说明
-
-##### 4.1.4.1 交互说明（SR-VLAN-001）
-
-| 组件名称 | 说明 | 用户操作 | 页面反馈 | 异常与容错处理 | 约束与边界 |
-|---|---|---|---|---|---|
-| Create Profile | 新建 Profile 草稿 | 点击 | 创建唯一候选名称/VLAN并进入详情 | 候选分配并发冲突时应刷新可用值并允许重试；无可写 Workspace 时禁用 | 只创建 Studio 输入，不创建设备配置 |
-| Profile Search | 定位 Profile | 输入关键字 | 实时过滤并保留总数 | 无结果时显示明确空状态 | 只过滤用户可读对象 |
-| Profile Name / Edit | 打开详情 | 点击 | 进入 Profile Configuration | 引用失效时应阻止编辑并提示刷新 Workspace | 不执行保存或 Build |
-| Delete | 删除 Profile 及其 Studio 引用 | 点击并确认 | 显示设备、接口、override 与引用影响，成功后返回列表 | 有外部引用、并发修改或事务失败时必须阻止删除、定位原因并保留原数据 | 不得删除 Inventory/Fabric 事实或其他配置源对象 |
-| Profile Summary | 查看规模 | 无 | 显示 Profile、owned devices、assigned interfaces 数 | 统计数据不可用时应显示未知并允许刷新，不得显示为零 | 统计必须绑定当前编辑 revision |
-| Form Validation | 校验名称与必填字段 | 编辑 | 字段级显示错误并汇总 | 空名称或规范化重名必须阻止保存 | 名称唯一不替代 Build 冲突校验 |
-| Workspace Save | 保存新增、编辑或删除 | 点击 Save/Apply | 原子提交并返回新 revision | ETag 冲突必须保留草稿，展示差异并允许重载或重试 | 保存不表示设备生效 |
-
-##### 4.1.4.2 参数说明（SR-VLAN-001）
-
-| 区域 | 字段 | 数据语义、来源、单位和派生关系 |
-|---|---|---|
-| Profile Summary | Profiles | 当前 revision 中 VLAN Service Profile 对象数。 |
-| Profile Summary | Owned Devices | 所有 Profile `deviceIds` 的唯一稳定设备 ID 数。 |
-| Profile Summary | Assigned Interfaces | 所有 `deviceId + canonicalInterfaceId` 的唯一组合数。 |
-| Profile List | Profile Name | 用户可读唯一名称；默认值从未占用的规范化名称集合派生。 |
-| Profile List | VLAN | Access 基础 VLAN 候选值；从有效范围内未占用候选集合派生。 |
-| Profile List | Assignment | device 数来自 ownership；interface 数来自 `interfaceAssignments`。 |
-| Profile List | Revision | Profile 最近保存所在 Workspace revision。 |
-
-#### 4.1.5 列表字段
-
-##### Profile List
-
-| 显示顺序 | 字段 | 内容 | 显示/隐藏 | 列固定 | 列排序 | 对齐方式 | 默认排序 |
-|---:|---|---|---|---|---|---|---|
-| 1 | Profile Name | 名称及详情入口。 | 始终 | 左固定 | 支持 | 左 | 名称自然升序 |
-| 2 | Description | 业务说明；空值显示 `—`。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 3 | Port Mode | Access 或 Trunk。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 4 | VLAN / Native VLAN | 按模式显示基础 VLAN。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 5 | Allowed VLANs | Trunk 显示规范化集合；Access 显示 `—`。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 6 | Gateway | 基础 Gateway；空值显示 `—`。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 7 | VLAN Step | 启用时显示步长，否则显示 `—`。 | 始终 | 否 | 支持 | 右 | 不适用 |
-| 8 | Gateway Step | 启用时显示子网步长，否则显示 `—`。 | 始终 | 否 | 支持 | 右 | 不适用 |
-| 9 | Assigned Scope | `N devices · N interfaces`，分别表示 ownership 与接口 scope。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 10 | Save/Build State | 显示该对象所在 revision 的保存和 Build 结果。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 11 | Operation | Edit、Delete。 | 始终 | 右固定 | 否 | 左 | 不适用 |
-
-#### 4.1.6 权限控制要求
-
-用户必须具有 Workspace 读取权限才能查看 Profile，具有 Workspace 与 VLAN Services 对象写权限才能 Create/Edit/Delete。无可写 Workspace 时所有写操作必须禁用；服务端必须再次执行 RBAC 与对象引用校验。删除所涉设备或接口不可读时，必须阻止操作并提示存在不可见引用，不得泄露未授权详情。
-
-#### 4.1.7 非功能需求
-
-列表应支持分页或虚拟化、稳定排序和可访问名称。默认值分配、删除与保存必须原子、幂等并可审计；Profile 应使用稳定 ID，名称变更不得破坏引用。
-
-### 4.2 Profile Configuration
-
-#### 4.2.1 功能说明
-
-定义 Profile 的基本信息、Access/Trunk、VLAN、Gateway、MTU 与 Sequential Allocation 规则。
-
-#### 4.2.2 产品设计及流程说明
-
-Profile Base 必须定义共享默认值；Sequential Generated Value 必须按 Selector 保存的逻辑单元顺序派生。普通设备构成一个 sequence unit，有效 M-LAG Pair 两端必须构成一个 unit 并使用相同 index。VLAN Step 和 Gateway Step 可独立启用。
-
-本期 Gateway 只保留 IPv4/CIDR 字段。Gateway 非空表示需要生成相应 SVI/L3 网关意图；VRF、IP Helpers 和 Address Pool 不在本期 UI 范围内，不得保留未定义的隐藏输入。`mlag-virtual` 网关模式必须等待能力契约确认，不得作为可提交值。
-
-#### 4.2.3 功能业务流程
-
-```text
-打开 Profile → 编辑名称、Description、Port Mode 与 MTU
-→ 编辑 Access VLAN 或 Trunk Native/Allowed VLANs
-→ 可选 Gateway、VLAN Step、Gateway Step
-→ 选择设备与接口 scope → Save → Build
-```
-
-#### 4.2.4 原型界面与交互说明
-
-##### 4.2.4.1 交互说明（SR-VLAN-002～SR-VLAN-004）
-
-| 组件名称 | 说明 | 用户操作 | 页面反馈 | 异常与容错处理 | 约束与边界 |
-|---|---|---|---|---|---|
-| VLAN Service Profiles | 返回列表 | 点击 | 保留编辑会话并返回 | 有未保存变更时必须提示保存、放弃或取消 | 不执行保存 |
-| Profile Name / Description | 编辑标识与说明 | 输入 | 显示 Local Dirty 和字段来源 | 名称空或规范化重名必须阻止保存 | Description 不参与配置生成 |
-| Port Mode | 选择 Access/Trunk | 选择 | 显示对应字段及模式切换影响 | 切换将使原模式字段失效时必须预览并确认，不得静默丢失 | 每个 Profile 只能有一个基础模式 |
-| VLAN / Native VLAN / Allowed VLANs | 编辑二层参数 | 输入 | 显示规范化值与派生预览 | 空值、格式、范围、倒序或空集合必须字段级报错；保存和 Build 必须校验冲突 | 范围校验不代表设备支持 |
-| MTU | 编辑基础 MTU | 输入 | 显示字节值与能力覆盖情况 | 非整数、越界或目标设备不支持时必须阻止相应保存或 Build | 设备能力由 capability/Build 权威判断 |
-| VLAN Step / Gateway Step | 配置顺序派生 | 切换并输入 | 显示各 sequence unit 的预览 | 步长非法、VLAN 溢出、IPv4 溢出或子网重叠必须阻止保存或 Build | 派生顺序必须来自已保存 Selector order |
-| Gateway | 编辑 IPv4/CIDR 网关 | 输入或清空 | 显示 L2-only 或 Gateway 派生预览 | 格式非法必须阻止保存；清空时必须预览受影响 SVI 意图 | VRF、Helpers、Address Pool 不在本期范围 |
-| Form Validation | 校验 Profile 输入 | 编辑 | 聚合字段和跨字段错误 | 错误必须定位到 Profile 和字段；未解决时不得保存 | Build 仍是能力与跨源冲突权威校验 |
-| Capability Validation | 校验目标设备能力 | 预览或 Build | 显示设备/接口能力差异 | 任何 assigned interface 不支持模式、VLAN、SVI 或 MTU 时必须阻止 Build | 不得以通用范围代替平台能力 |
-
-##### 4.2.4.2 参数说明（SR-VLAN-002～SR-VLAN-004）
-
-| 区域 | 字段 | 数据语义、来源、单位和派生关系 |
-|---|---|---|
-| Basic | Profile Name | 用户可读名称；唯一键比较采用 Trim 后的规范化值。 |
-| Basic | Description | 业务说明文本，不参与设备配置派生。 |
-| Basic | Port Mode | 枚举 `access` 或 `trunk`。 |
-| Basic | MTU | 二层接口 MTU，单位 byte；允许范围由目标平台能力交集确定。 |
-| Access | VLAN | 基础 Access VLAN ID，协议范围 1–4094。 |
-| Access | VLAN Step | 每 sequence unit 的 VLAN ID 增量，单位 VLAN ID。 |
-| Trunk | Native VLAN ID | 基础 Native VLAN ID，协议范围 1–4094。 |
-| Trunk | Allowed VLANs | VLAN ID 集合；输入可为单值和闭区间，存储与比较采用去重、合并、升序的规范化集合。 |
-| Gateway | SVI Gateway Binding | 每一行绑定一个 VLAN ID 与 IPv4/CIDR SVI Gateway；Gateway 为空表示该 VLAN 仅二层。IPv4 必须是可用主机地址，不得填写网段或广播地址。该多绑定表为 AmpCon VLAN Services 扩展，最终仍通过共同 Workspace Build 校验并生成 SVI 意图。 |
-| Allocation | Mode | Step 均未启用为 Shared；任一启用为 Sequential。 |
-| Allocation | VLAN Generated Value | `baseVlan + sequenceUnitIndex × vlanStep`。 |
-| Allocation | Gateway Generated Value | `baseNetwork + sequenceUnitIndex × subnetStep × subnetSize`，主机地址偏移与 prefix 保持一致。 |
-| Allocation | Device Order | Selector 保存的稳定逻辑单元顺序。 |
-| Allocation | Sequence Unit | 普通设备为一台设备；M-LAG Pair 为两台 peer 的组合。 |
-
-#### 4.2.5 列表字段
-
-| 显示顺序 | 字段 | 内容 | 显示/隐藏 | 列固定 | 列排序 | 对齐方式 | 默认排序 |
-|---:|---|---|---|---|---|---|---|
-| 不适用 | 不适用 | 本模块为详情表单；Profile List 见 4.1.5，派生预览按 sequence unit 顺序展示。 | 不适用 | 不适用 | 不适用 | 不适用 | 不适用 |
-
-#### 4.2.6 权限控制要求
-
-字段可编辑性必须由 Workspace 写权限、VLAN Services 对象权限和目标资源可见性共同决定。用户无法读取或写入任一 M-LAG peer 时，相关 Profile scope 必须只读且不得保存。服务端必须校验名称唯一性、字段权限和 revision 条件。
-
-#### 4.2.7 非功能需求
-
-IPv4 与 VLAN 派生必须使用无溢出的确定性算法；相同 revision、Inventory/Fabric snapshot 和输入必须得到相同结果。模式切换和字段清空必须可审计且不得静默丢失意图。
-
-### 4.3 Select Devices & Interfaces
-
-#### 4.3.1 功能说明
-
-为当前 Profile 选择有序设备与接口 scope。Selector 必须是 Profile Configuration 中的可见入口，并必须将有效 M-LAG Pair 联选为一个 sequence unit。
-
-#### 4.3.2 产品设计及流程说明
-
-设备候选必须来自 Inventory 可见设备，M-LAG 事实必须来自 Fabric。接口候选必须基于所有目标设备的 canonical interface 能力交集，不得以首台设备的接口名称假定公共接口。Generated Name 只允许作为候选提示；在所有目标设备确认存在、canonical 映射一致且能力一致前不得应用。
-
-设备排序必须稳定并保存为逻辑单元顺序。M-LAG Pair 必须相邻且共享 sequence index。选择变化导致接口 scope 失效时，必须展示差异并要求确认，不得静默清除。
-
-#### 4.3.3 功能业务流程
-
-```text
-从 Profile 打开 Selector → 筛选、排序并选择设备/M-LAG Pair
-→ 计算所有目标设备 canonical interface 能力交集
-→ 选择接口 → 预览 device ownership、interface scope 与 sequence units
-→ Apply 到编辑会话 → Save → Build 复核
-```
-
-#### 4.3.4 原型界面与交互说明
-
-##### 4.3.4.1 交互说明（SR-VLAN-005～SR-VLAN-006）
-
-| 组件名称 | 说明 | 用户操作 | 页面反馈 | 异常与容错处理 | 约束与边界 |
-|---|---|---|---|---|---|
-| Selector Entry | 打开当前 Profile 的 scope 选择器 | 点击 | 显示已选设备、接口与 sequence order | Workspace 不可写或 Profile 不可编辑时禁用并说明原因 | 只编辑当前 Profile 的 ownership/scope |
-| Role Filter | 筛选设备 | 选择角色 | 实时过滤候选并保留已选状态 | 筛选无结果时显示空状态；已选设备不可见时显示保留提示 | 角色来源 Inventory，不由 Studio 修改 |
-| Device Order | 定义 sequence unit 顺序 | 选择 Name/IP 升降序或手动顺序 | 重排预览并重算 Generated Value | 管理 IP 缺失/非法时必须标记并使用稳定次级键；重排影响派生值时必须确认 | 排序必须保存稳定设备 ID，不得只保存显示名 |
-| Device Search/Selection | 选择目标设备 | 搜索、勾选 | M-LAG Pair 双端联选并显示一个 unit | partial/invalid pair、peer 不可见、只读或能力不对称时必须阻止选择；变更导致 scope 失效时须确认 | 一台设备只能归一个 Profile |
-| Interface Search/Selection | 选择公共 canonical interface | 搜索、勾选 | 显示目标设备覆盖率、能力交集与 selected scope | 非全设备存在、canonical 映射不一致或能力不足时不得选择 | 同名接口不等于同一 canonical interface |
-| Generated Name Candidate | 展示推测接口名称 | 查看并选择 | 明确标记 Candidate | 未被所有设备事实源确认时不得 Apply | 只作候选，不构成 Inventory 事实 |
-| Cancel / Close | 放弃临时选择 | 点击 | 关闭且不写入编辑会话 | 临时选择已变化时必须确认放弃；意外关闭后应可恢复会话 | 不保存 Workspace |
-| Apply | 应用 ownership 与 interface scope | 点击 | 写入有序 `deviceIds` 和每设备 `interfaceAssignments` | 未选设备或接口时不得 Apply；并发事实变化时应刷新差异且不部分写入 | Apply 不代表 Save、Build 或设备生效 |
-| Ownership Validation | 校验 Profile 设备归属 | Apply/Save | 显示冲突 Profile 与定位入口 | 设备已有其他 Profile 时必须进入显式切换流程，不得静默转移 | 单设备单 Profile owner |
-| Capability Validation | 校验公共接口能力 | Apply/Build | 显示逐设备/接口差异 | 任何目标不支持所需模式、VLAN、Gateway 或 MTU 时必须阻止 | Build 必须使用权威 snapshot 复核 |
-
-##### 4.3.4.2 参数说明（SR-VLAN-005～SR-VLAN-006）
-
-| 区域 | 字段 | 数据语义、来源、单位和派生关系 |
-|---|---|---|
-| Device Filter | Role | Inventory 提供的设备角色枚举。 |
-| Device Filter | Device Order | hostname、management IP 的升降序或用户定义的稳定逻辑单元顺序。 |
-| Device List | Device / Mgmt IP / Model | 来源 Inventory 当前 snapshot。 |
-| Device List | M-LAG Pair | 来源 Fabric 的双端稳定设备 ID 关系。 |
-| Assignment | Device IDs | 按 sequence unit 顺序保存的稳定设备 ID。 |
-| Assignment | Sequence Unit ID | 普通设备 ID 或规范化 M-LAG Pair ID。 |
-| Interface List | Canonical Interface ID | 跨目标设备映射的稳定逻辑接口标识。 |
-| Interface List | Display Name | 各设备接口名称的可读展示；名称差异不改变 canonical identity。 |
-| Interface List | Capability Intersection | 所有目标设备对接口存在性、模式、VLAN、SVI、MTU 等能力的交集。 |
-| Interface List | Source | Inventory、Topology/LLDP、Capability Catalog 或 Generated Candidate。 |
-| Assignment | Interface Scope | 每个设备的 `deviceId + canonicalInterfaceId` 集合。 |
-
-#### 4.3.5 列表字段
-
-##### Select Devices & Interfaces — Device List
-
-| 显示顺序 | 字段 | 内容 | 显示/隐藏 | 列固定 | 列排序 | 对齐方式 | 默认排序 |
-|---:|---|---|---|---|---|---|---|
-| 1 | Selection | 复选框；M-LAG Pair 联选。 | 始终 | 左固定 | 否 | 左 | 不适用 |
-| 2 | Sequence | sequence unit index；Pair 两端相同。 | 始终 | 左固定 | 支持 | 右 | Device Order |
-| 3 | Device / Mgmt IP | hostname、管理 IP、M-LAG badge。 | 始终 | 否 | 支持 | 左 | hostname 自然升序 |
-| 4 | Model | Inventory model。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 5 | Role | Inventory role。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 6 | M-LAG Peer | peer 名称与 pair 状态。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 7 | Permission | Read/Write/Blocked。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 8 | Assigned Profile | 已有 Profile owner 或 Unassigned。 | 始终 | 否 | 支持 | 左 | 不适用 |
-
-##### Select Devices & Interfaces — Interface List
-
-| 显示顺序 | 字段 | 内容 | 显示/隐藏 | 列固定 | 列排序 | 对齐方式 | 默认排序 |
-|---:|---|---|---|---|---|---|---|
-| 1 | Selection | 接口复选框。 | 始终 | 左固定 | 否 | 左 | 不适用 |
-| 2 | Canonical Interface | canonical ID 与各设备显示名。 | 始终 | 左固定 | 支持 | 左 | canonical 自然升序 |
-| 3 | Presence | 目标设备存在数/总数。 | 始终 | 否 | 支持 | 右 | 不适用 |
-| 4 | Source | 事实来源；候选必须显式标记。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 5 | Capability Intersection | 公共 Port Mode、VLAN、Gateway、MTU 能力摘要。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 6 | Assigned Scope | 当前 Profile、其他 Profile 或 Unassigned。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 7 | Validation | Ready、Candidate、Conflict、Unsupported。 | 始终 | 否 | 支持 | 左 | 不适用 |
-
-#### 4.3.6 权限控制要求
-
-Selector 只允许展示用户可读设备和接口。任一 M-LAG peer 不可见、只读或不可写时，Pair 必须不可选且不可保存。Apply 需要 Workspace、Profile、设备和全部接口写权限；服务端必须依据提交时 snapshot 重新鉴权。不可见引用只能显示阻塞原因和授权请求路径，不得泄露对象详情。
-
-#### 4.3.7 非功能需求
-
-设备和接口列表必须支持大规模虚拟化、稳定可重放排序、键盘操作、焦点管理和脏状态恢复。能力交集计算必须绑定事实源版本，并应在事实变化时使预览失效。
-
-### 4.4 Device & Interface
-
-#### 4.4.1 功能说明
-
-在 Inventory 设备列表中查看 Profile ownership 与 interface scope，应用、切换或移除 Profile，并编辑 Profile Override 或无 Profile 设备的 Direct Configuration。
-
-#### 4.4.2 产品设计及流程说明
-
-Profile 场景的值优先级必须为 `Override > Sequential Generated > Base`。UI 必须分别显示 Base、Sequential Generated、Override、Effective Value 与 Value Source，并提供 Reset to inherited。字段状态必须区分：未设置并继承、显式值、显式清除；显式清除只允许用于产品契约允许清空的字段。
-
-设备只能归一个 Profile，但 Profile 只允许对 `interfaceAssignments` 中的接口生成配置；其他接口必须显示 Unassigned。Apply Profile 必须创建明确 interface scope；未选择接口时不得生成设备配置。
-
-Direct Configuration 只允许用于无 Profile 设备。Access 最小有效字段为 VLAN + MTU；Trunk 最小有效字段为 Native VLAN + 非空 Allowed VLANs + MTU。Description-only 不形成业务配置。Direct 必须提供 Remove 和 Reset。Direct 用于 M-LAG 时允许联写：Port Mode、VLAN/Native VLAN、规范化 Allowed VLANs、Gateway、MTU 必须写入双端对应 canonical interface，Description 可独立；两端必须具备相同接口能力和写权限。
-
-Direct → Profile 迁移、Profile 切换、Profile 删除和 Assignment 移除必须预览影响、检测冲突、要求用户确认，并由服务端以原子事务执行；失败时必须恢复原 ownership、scope 和值。
-
-#### 4.4.3 功能业务流程
-
-```text
-查看 Device List → 选择 Profile、设备和明确接口 scope → Apply Profile
-→ 预览 ownership/scope/Direct 迁移 → 确认 → 原子 Save
-→ 打开 Interface Detail → 查看 Base/Generated/Override/Effective
-→ 编辑 Override 或 Reset to inherited
-或在无 Profile 设备上创建 Direct → M-LAG 联写校验 → Save → Build
-```
-
-#### 4.4.4 原型界面与交互说明
-
-##### 4.4.4.1 交互说明（SR-VLAN-007～SR-VLAN-009）
-
-| 组件名称 | 说明 | 用户操作 | 页面反馈 | 异常与容错处理 | 约束与边界 |
-|---|---|---|---|---|---|
-| Apply Profile Selector | 选择目标 Profile 与接口 scope | 搜索、选择 Profile、设备、接口 | 显示 ownership、scope 和迁移预览 | 未选择 Profile、设备或接口时不得 Apply；冲突时提供定位入口 | 不得只创建设备 ownership 而无 interface scope |
-| Edit Selected Profile | 打开 Profile 详情 | 点击 | 切换到 Profile Configuration | Profile 已被删除或无权限时提示刷新 | 不改变 assignment |
-| Device Search/Selection | 选择目标设备或完整 M-LAG Pair。 | 搜索、勾选任一成员或使用全选。 | 选择任一有效 M-LAG 成员时自动选择整个 Pair；Pair 两端在设备列表中保持相邻，并显示相同 M-LAG ID。 | 只选择一端、Peer 不可见/不可写、Domain 非法或两端能力不对称时，整组必须标红并禁用 Apply；展开组行必须可查看两台物理成员和接口映射。 | M-LAG Pair 是 Fabric 事实和一个逻辑分配单元；该页仅展示 M-LAG ID，不展示 VLAN/IP 步长或 Sequence。 |
-| Apply Profile | 创建、切换 Profile ownership 与 scope | 点击、预览并确认 | 显示新增、移除、迁移和冲突摘要；成功返回新 revision | Direct 迁移或旧 Profile 冲突必须由用户选择保留为 Override、采用 Profile 值或取消；事务失败不得部分应用 | Save 只形成 Workspace candidate |
-| Remove Assignment | 移除设备或接口 assignment | 选择并确认 | 显示将停止生成的接口配置 | 外部引用、M-LAG 不对称或事务失败时必须阻止并恢复 | 不删除 Inventory 接口；设备无 scope 时必须解除 Profile ownership |
-| Device Name / Configure Interfaces | 打开 Interface Detail | 点击 | 显示全部可读接口及 Assigned/Unassigned，并保留所属 M-LAG ID。 | 事实源不可用时显示 snapshot 与刷新入口；M-LAG Pair 无效时显示告警状态。 | 只对 Assigned 行生成 Profile 配置。 |
-| M-LAG ID / Pair Detail | 展示设备所属 M-LAG Pair 身份。 | 点击或展开 `M-LAG 01`。 | 展开显示两台物理成员、Peer 状态、M-LAG Domain、共同接口映射和 Pair 校验结果。 | 单边选择、Peer 不可见/不可写、Domain 非法、共同接口缺失或能力不对称时，整个 Pair 标红并禁用 Apply。 | 同一 Pair 两端必须显示相同 M-LAG ID；非 M-LAG 为 `—`。本页不得展示步长、Sequence 或 VLAN/IP 分配索引。 |
-| Value Source Viewer | 展示各配置层 | 展开行 | 显示 Base、Generated、Override、Effective 与来源 | 派生失败或来源 revision 不一致时不得显示伪造 Effective | Direct 行不显示 Profile 继承层 |
-| Description | 编辑接口描述 | 输入 | Profile Override 或 Direct 更新当前端 | 输入超限应字段级报错并保留草稿 | M-LAG 两端允许独立 |
-| Port Mode / VLAN / Allowed VLANs / Gateway / MTU | 编辑关键字段 | 输入 | Profile Override 或 Direct 对 M-LAG 双端联写并显示 Effective | 格式、必填、能力、权限或对称失败必须阻止提交；Allowed VLANs 应规范化后比较 | 关键字段必须遵循 canonical interface 对称规则 |
-| Reset to inherited | 删除 Profile Override 字段 | 点击并确认 | Effective 回退至 Generated 或 Base | 回退后配置无效时必须阻止并说明依赖 | 仅 Profile assignment 可用 |
-| Explicit Clear | 显式清除允许为空的继承字段 | 选择 Clear | 显示 Override=`Clear` 与新的 Effective | 必填字段不得 Clear；Build 必须校验设备语义 | 与未设置/继承状态必须区分 |
-| Remove Direct | 删除 Direct 业务配置 | 点击并确认 | 移除接口 Direct assignment | M-LAG 关键字段必须双端移除；失败时恢复 | 不影响 Description 之外的 Inventory 事实 |
-| Reset Direct | 恢复 Direct 编辑值 | 点击 | 回到已保存 revision 或清空新建草稿 | 有未保存变更时必须确认 | Direct 不存在继承层 |
-| Ownership Validation | 校验设备单一 Profile owner | Apply/Save | 显示冲突对象及来源 | 多 Profile、Profile+Direct 并存必须阻止 | Direct 与 Profile 互斥 |
-| Capability Validation | 校验设备和接口能力 | 编辑/Build | 显示逐端能力差异 | 任一 M-LAG peer 不支持关键字段时必须阻止双端提交 | Build 为权威结果 |
-| Workspace Save | 保存 assignment、迁移和字段变更 | 点击 Save/Apply | 原子提交并返回 revision | ETag 冲突、超时或服务端拒绝时保留草稿并允许幂等重试 | 不表示设备已执行 |
-
-##### 4.4.4.2 参数说明（SR-VLAN-007～SR-VLAN-009）
-
-| 区域 | 字段 | 数据语义、来源、单位和派生关系 |
-|---|---|---|
-| Profile Assignment | Profile ID | 设备唯一 Profile owner 的稳定对象 ID。 |
-| Profile Assignment | Device IDs | Inventory 稳定设备 ID；M-LAG 使用 pair 关系关联。 |
-| Profile Assignment | Interface Scope | `deviceId + canonicalInterfaceId` 集合。 |
-| Device List | Device / Management IP | 来源 Inventory。 |
-| Device List | M-LAG ID | Fabric 为每个 M-LAG Domain 分配的稳定显示标识，如 `M-LAG 01`；同一 Pair 两端相同，非 M-LAG 设备为 `—`。该字段只标识 Pair 身份，不表达步长、Sequence 或 VLAN/IP 派生值。 |
-| Device List | Profile | 设备 Profile owner；无 owner 为 Unassigned。 |
-| Device List | Assigned Scope | 该设备 assigned interface 数与总可见接口数。 |
-| Interface Detail | Interface | canonical interface ID、设备显示名及事实来源。 |
-| Interface Detail | Assignment State | Assigned 或 Unassigned。 |
-| Interface Detail | Base Value | Profile 定义的基础字段值。 |
-| Interface Detail | Sequential Generated | 根据 sequence unit index 和 Step 派生的 VLAN/Gateway 值。 |
-| Interface Detail | Override | 显式值、显式 Clear 或未设置。 |
-| Interface Detail | Effective Value | 按 `Override > Generated > Base` 派生的最终候选字段值。 |
-| Interface Detail | Value Source | `Base`、`Sequential Generated`、`Override`、`Explicit Clear` 或 `Direct`。 |
-| Interface Detail | Description | 接口业务说明文本。 |
-| Interface Detail | Port Mode | `access` 或 `trunk`。 |
-| Interface Detail | VLAN / Native VLAN | VLAN ID，协议范围 1–4094。 |
-| Interface Detail | Allowed VLANs | 规范化 VLAN ID 集合。 |
-| Interface Detail | Gateway | IPv4/CIDR；允许清空时以 Explicit Clear 表示。 |
-| Interface Detail | MTU | 单位 byte；有效范围来源平台能力。 |
-| Direct | Business Configuration | 无 Profile 接口上的显式 Port Mode、VLAN 参数、Gateway 和 MTU。 |
-| Direct | Validity | Access 由 VLAN+MTU 派生；Trunk 由 Native VLAN+Allowed VLANs+MTU 派生。 |
-
-#### 4.4.5 列表字段
-
-##### Device List
-
-| 显示顺序 | 字段 | 内容 | 显示/隐藏 | 列固定 | 列排序 | 对齐方式 | 默认排序 |
-|---:|---|---|---|---|---|---|---|
-| 1 | Device | 复选框、hostname、model/role、详情入口。 | 始终 | 左固定 | 支持 | 左 | hostname 自然升序 |
-| 2 | Management IP | Inventory 管理地址；缺失显示 `—`。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 3 | M-LAG ID | 同一有效 Pair 的两端显示相同稳定标识，如 `M-LAG 01`、`M-LAG 02`；非 M-LAG 设备显示 `—`。无效 Pair 保留 M-LAG ID 并显示告警状态；点击可展开查看两台成员、Peer 状态和共同接口映射。 | 始终 | 否 | 支持 | 左 | M-LAG Domain 稳定顺序；不参与 VLAN/IP 步长排序 |
-| 4 | Profile Ownership | Profile 名称或 Unassigned。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 5 | Assigned Scope | `N assigned / N visible interfaces`。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 6 | Port Mode | Assigned/Direct 接口 Effective Value 汇总。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 7 | VLAN / Native VLAN | Effective Value 汇总；多值显示 Mixed 及数量。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 8 | Allowed VLANs | Effective 规范化集合摘要。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 9 | Gateway | Effective Gateway 摘要。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 10 | MTU | Effective MTU 摘要，单位 byte。 | 始终 | 否 | 支持 | 右 | 不适用 |
-| 11 | Value Source | Base/Generated/Override/Direct 来源分布。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 12 | Validation | Local、Save、Build 的错误/警告摘要。M-LAG Pair 的单边选择、Peer 不可见、Domain 非法、共同接口缺失或能力不对称显示为 Blocking Error。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 13 | Operation | Configure Interfaces、Remove Assignment。 | 始终 | 右固定 | 否 | 左 | 不适用 |
-
-##### Interface Detail
-
-| 显示顺序 | 字段 | 内容 | 显示/隐藏 | 列固定 | 列排序 | 对齐方式 | 默认排序 |
-|---:|---|---|---|---|---|---|---|
-| 1 | Interface | canonical ID、设备接口名和 M-LAG peer 映射。 | 始终 | 左固定 | 支持 | 左 | canonical 自然升序 |
-| 2 | Assigned Scope | Assigned、Unassigned 或 Direct。 | 始终 | 否 | 支持 | 左 | Assigned 优先 |
-| 3 | Description | 当前端 Description。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 4 | Port Mode | Base、Override/Direct 与 Effective。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 5 | VLAN / Native VLAN | Base、Generated、Override/Direct 与 Effective。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 6 | Allowed VLANs | Base、Override/Direct 与 Effective 规范化集合。 | Trunk | 否 | 否 | 左 | 不适用 |
-| 7 | Gateway | Base、Generated、Override/Direct 与 Effective。 | 始终 | 否 | 否 | 左 | 不适用 |
-| 8 | MTU | Base、Override/Direct 与 Effective，单位 byte。 | 始终 | 否 | 支持 | 右 | 不适用 |
-| 9 | Value Source | 每个字段的 Base、Sequential Generated、Override、Explicit Clear 或 Direct。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 10 | Validation | 对称性、能力、ownership 与 Build 结果。 | 始终 | 否 | 支持 | 左 | 不适用 |
-| 11 | Operation | Reset to inherited、Explicit Clear、Remove/Reset Direct。 | 始终 | 右固定 | 否 | 左 | 不适用 |
-
-#### 4.4.6 权限控制要求
-
-查看需要 Workspace、设备和接口读权限。Apply/Switch/Remove Profile、迁移 Direct 和编辑接口值需要 Workspace、Profile、设备及全部 scope 接口写权限。M-LAG 任一 peer 不可见或只读时，Pair 的 assignment 和关键字段必须不可编辑。服务端必须校验 RBAC、ownership、scope、revision 和事实源版本；前端禁用不得替代服务端校验。
-
-#### 4.4.7 非功能需求
-
-大表必须支持虚拟化和稳定滚动定位。来源、继承、显式清除和 Effective Value 不得仅以颜色区分。迁移、切换、删除、Reset 和 Remove 必须具备审计记录、幂等请求键和失败恢复；`Mixed` 只允许作为汇总显示，不得作为配置值。
-
-## 5. 功能评审（Review）
-
-### 5.1 评审人员
-
-| 角色 | 评审重点 |
+| 功能 | 当前行为 |
 |---|---|
-| 产品经理 | Profile/Direct、ownership、scope、目标态生命周期与范围 |
-| 网络架构师 | VLAN/Gateway、Sequential、M-LAG 对称性和能力契约 |
-| UX/UI | 可见入口、值来源、Reset、迁移预览和状态层级 |
-| 后端开发 | Workspace revision、ETag、原子事务、RBAC 和审计 |
-| CloudVision 集成 | Build、Submit、Change Control、Running/Compliance 映射 |
-| 测试工程师 | 跨字段、跨对象、并发、失败恢复和边界 |
+| 设备搜索 | 按 hostname 或 management IP 搜索。 |
+| 设备排序 | hostname 或 management IP 升/降序。 |
+| 角色筛选 | UI 状态和过滤逻辑支持 All、Spine、Leaf；当前对话框仍以已有设备数据为准。 |
+| M-LAG | 有效 Pair 选择一个成员时联选两个成员；分配顺序中共用一个 unit。 |
+| 接口候选 | 使用**第一台选中设备**的 observed/generated 接口名，不计算全部目标设备交集。 |
+| 已分配资源 | 已被 Profile 或 Direct 使用的接口会显示 owner 并锁定；设备 scope 已占用时也会锁定。 |
+| 应用 Profile | 当前对话框只显示 Device Profile 下拉框；Apply 要求至少选择设备、接口和非 `None` Profile，并按 device scope 调用。 |
+| 清理 Profile | 可打开 Clear Profile 对话框并移除选定/全部已应用 Profile 的设备与接口范围。 |
 
-### 5.2 评审结果
+当前 Device Profile 的 device-scope Apply 若用户未选接口，会回退为设备的全部可用 generated/observed 接口。因此它不满足“必须先明确选择接口”的目标态要求。
 
-| 功能 | 结果 | 目标态评审重点 |
+### SR-VLAN-004：Device & Interface
+
+#### 4.6 设备列表
+
+页面只显示已有 Profile assignment 或 Direct assignment 的设备；它不是完整 Inventory 浏览器。
+
+| 列 | 当前显示/行为 |
+|---|---|
+| Device | 选择框、hostname、model 与配置入口。有效 M-LAG Pair 可联选。 |
+| Management IP | Inventory 管理地址；缺失时显示 `-`。 |
+| M-LAG Pair | `M-LAG 01` 等本地生成显示 ID；无 Pair 时 `-`。 |
+| Port Mode | 已配置接口的有效值摘要；多个值显示 `Mixed`。 |
+| VLAN / Native VLAN | 已配置接口摘要。 |
+| Allowed VLANs | Trunk 接口值摘要。 |
+| SVI IP | 已配置接口 gateway 摘要。 |
+| MTU | 已配置接口摘要。 |
+| Profile | Profile 名称或 `None`。 |
+| Operation | 打开设备/接口配置视图。 |
+
+#### 4.7 Profile 端口与 Direct 端口
+
+主 Device & Interface 表中，端口按当前归属展示：
+
+| 项目 | 已应用 Profile 的端口 | `None` / Direct 端口 |
 |---|---|---|
-| VLAN Service Profiles | 待评审 | 唯一默认值分配、删除影响、引用定位与原子恢复。 |
-| Profile Configuration | 待评审 | 本期 Gateway 字段、Sequential 算法、范围与能力契约。 |
-| Select Devices & Interfaces | 待评审 | 可见入口、canonical 能力交集、稳定排序和 M-LAG unit。 |
-| Device & Interface | 待评审 | ownership/scope、值来源、Direct 最小字段、对称联写和原子迁移。 |
+| Description | 只读。 | 可在选中 Workspace 时编辑。 |
+| Port Mode | 只读。 | 可编辑 Access/Trunk。 |
+| VLAN / Native VLAN | 只读。 | 可从既有 Network VLAN 选择。 |
+| Allowed VLANs | 只读；仅 Trunk 显示。 | Trunk 可从既有 Network VLAN 多选。 |
+| SVI IP | 只显示 Profile/Direct 的 SVI 摘要。 | 当前主表无单端口 SVI IP 输入框。 |
+| MTU | 只读。 | 可编辑。 |
+| Profile 下拉框 | 可切换到另一个 Profile 或 `None`。 | 可分配已有 Profile。 |
 
-### 5.3 遗留问题
+Profile 端口使用 `locked = Boolean(portProfile)` 保护上述字段。切换某端口的 Profile 时，当前逻辑会先从其余 Profile 和 Direct assignment 中移除该端口，再加入目标 Profile 或 Direct assignment。对有效 M-LAG Pair，该操作会同时处理 peer 的同名端口。
 
-| 编号 | 待产品确认项 | 建议处理与回链 |
+Direct 端口的编辑写入 `directInterfaceAssignments`。当前没有 Direct Remove、Reset、迁移预览或确认步骤；将 Profile 改为 `None` 即可产生 Direct 归属。
+
+#### 4.8 M-LAG 当前约束
+
+当前实现具备以下前端行为：
+
+- 有效 Pair 是恰好两台、均能在 Inventory 找到的分组。
+- 选择设备与进行 Profile 切换时可联动 Pair 成员。
+- Profile effective value 的 VLAN/Gateway sequence 对 Pair 共用 index。
+- 若 Profile binding 启用了 M-LAG，则可按成员位置选取 Node 1 或 Node 2 SVI 地址。
+- 本地校验会检查 Profile M-LAG Pair 的完整性、接口范围和关键 Profile 值的对称性。
+
+以下能力未实现，不能视为当前约束已满足：Fabric peer health、Leaf role、读写权限、共同 canonical interface、接口能力交集、Direct 关键字段的双端对称校验/联写，以及服务端原子性。
+
+## 5. 当前本地校验与错误处理
+
+### 5.1 已实现的本地校验
+
+`validationErrors` 会阻止本地自动保存，并汇总以下检查：
+
+1. 至少存在一个 Profile；Profile 名称经 trim/lowercase 后不可重复。
+2. Profile 与 Network binding 的 VLAN ID 必须在 1–4094；同一集合内不可重复。
+3. SVI gateway 必须是 IPv4/CIDR 可用主机地址；Network 内 gateway 不可重复。
+4. M-LAG binding 开启时需要 gateway，且 Node 1/Node 2 地址必须可解析并处于同一子网。
+5. Port Mode 必须为 Access 或 Trunk；MTU 在 1500–9216；Access/Trunk 所需 VLAN 字段会被检查。
+6. VLAN Step 与 Gateway Step 的范围为 1–100；派生 VLAN 或 IPv4 地址空间溢出会报错。
+7. 已引用设备必须存在；assignment 必须有至少一个接口；同一设备/接口不可属于多个 Profile。
+8. Profile 场景下有效 M-LAG Pair 的成员、接口范围及关键有效值必须保持对称。
+
+### 5.2 当前已知校验缺口
+
+| 领域 | 当前缺口 |
+|---|---|
+| Direct | Direct 只检查显式 override；Trunk Direct 不强制非空 Allowed VLAN，且没有 Direct M-LAG 对称校验。 |
+| 能力 | 无接口存在性、breakout、模式、VLAN、SVI、MTU 的平台 capability 校验。 |
+| Ownership | 无其他 Studio、Intent Center、Templates & CLI 的 ownership/冲突检查。 |
+| 权限 | 无 Workspace、设备、接口或对象 RBAC。 |
+| 并发 | 无 revision、ETag、基线或冲突合并。 |
+| Build | 无 CloudVision Workspace Build 或服务端权威复核。 |
+
+### 5.3 用户可见提示
+
+当前界面可显示字段内红色错误（例如重复 VLAN、无效 SVI IP、Step 范围）和顶部 validation item 数量。异常处理仅限本地状态；没有网络请求超时、权限拒绝、服务端冲突或回滚反馈。
+
+## 6. 未实现项与后续目标
+
+下表记录现有 SR v2.1 中的目标态要求。它们仍可作为后续产品目标，但不是当前交付行为。
+
+| 编号 | 目标能力 | 当前状态 |
 |---|---|---|
-| OI-001 | Gateway 地址是否允许 network address、broadcast address，以及 /31、/32 的使用规则 | 由网络架构与平台能力契约确认；回链 4.2.2、4.2.4。 |
-| OI-002 | Gateway Sequential 的 host offset、跨子网边界及地址池耗尽规则 | 明确算法后固化预览与 Build 校验；回链 4.2.4.2。 |
-| OI-003 | VRF 与 Address Pool 是否进入后续版本，以及与外部 IPAM 的 ownership | 本期不提供 UI 或隐藏输入；后续单独立项，回链 4.2.2。 |
-| OI-004 | `mlag-virtual` Gateway 的平台支持矩阵、地址语义和双端生成契约 | 能力契约确认前不得提交该模式；回链 4.2.2、4.4.2。 |
-| OI-005 | MTU 口径是二层 frame、IP MTU 还是平台命令值，以及不同平台的单位/范围差异 | 由 capability catalog 提供语义和转换；回链 4.2.4.2、4.4.4.2。 |
-| OI-006 | canonical interface 对 breakout、port-channel 与平台命名差异的映射规则 | Inventory/Capability 团队确认稳定身份契约；回链 4.3.2、4.3.4.2。 |
+| GAP-001 | Workspace revision、baseline、ETag、可写状态和服务端 RBAC。 | 未实现；仅使用非空 Workspace 字符串作为门禁。 |
+| GAP-002 | 原子 Save/Apply、固定 revision Review/Submit、CloudVision Build。 | 未实现；本地 autosave 只更新时间戳，Review 固定禁用。 |
+| GAP-003 | Change Control、Tasks 映射、执行、回滚、Running/Compliance 回采。 | 未实现。 |
+| GAP-004 | Profile 删除影响预览、引用定位与服务端原子事务。 | Create 与未引用 Profile 的字段编辑已可用；Delete 入口仍禁用，且无影响预览或服务端事务。 |
+| GAP-005 | 所有目标设备的 canonical interface、Presence 和 Capability Intersection。 | 未实现；接口候选仅取第一台选中设备的名字。 |
+| GAP-006 | 可见的 interface-scope Profile picker、scope 预览和显式接口 Apply。 | 部分状态/函数存在；当前 UI 仅提供 Device Profile 下拉框。 |
+| GAP-007 | Profile Base/Generated/Override/Effective/Value Source 展示，Override 编辑、Reset 和 Explicit Clear。 | 数据算法部分存在；主 UI 未提供完整操作。 |
+| GAP-008 | Direct Remove/Reset、Direct→Profile 迁移预览与确认。 | 未实现；切换 Profile 当前会本地静默移除旧归属。 |
+| GAP-009 | Direct M-LAG 关键字段双端联写与对称/能力/权限校验。 | 未实现。 |
+| GAP-010 | 与其他 Studio、Intent Center、Templates & CLI 的配置 ownership/冲突检查。 | 未实现。 |
 
-> CloudVision 生命周期语义根据 Arista 官方 Workflow 与 Studio 文档转述；Profile、Sequential Allocation、Direct Configuration 和本页交互均为 AmpCon 扩展。Content was rephrased for compliance with licensing restrictions.
+## 7. 评审结论
+
+| 范围 | 当前结论 |
+|---|---|
+| Network VLAN/SVI 编辑 | 可作为本地草稿编辑使用；单条 Network binding 的主要字段可编辑。 |
+| Profile 生命周期 | 可创建新的空配置 Profile，并可编辑未引用 Profile 的字段；Delete、引用影响预览和服务端原子性仍未实现。 |
+| Device & Interface | 当前 UI 可选择设备和接口、应用 Profile，并对 Direct 端口编辑部分二层参数。 |
+| 接口独立编辑 | 与旧截图的“仅模板”不同：Direct 端口当前可独立编辑；Profile 端口保持继承锁定。 |
+| M-LAG | 有前端联选、序号和部分对称检查；非权威 Fabric/capability/RBAC 实现。 |
+| CloudVision 流程 | 仅保留术语和未来边界；未接入 Workspace Build、Review/Submit、Tasks 或 Change Control。 |
+
+## 8. 评审待确认项
+
+| 编号 | 待确认项 | 建议 |
+|---|---|---|
+| OI-001 | 产品是否继续允许 Direct 单接口编辑。 | 现版本允许；若要恢复“只能应用模板”，应同时更新 UI、校验和本 SR。 |
+| OI-002 | Direct 的 SVI IP 是否需在主 Device & Interface 表提供编辑器。 | 现版本仅显示摘要；应明确由 Network/Profile 还是 Direct 接口拥有该值。 |
+| OI-003 | Device-scope Apply 未选接口时是否允许分配所有接口。 | 建议改为必须显式选择接口，以避免意外配置范围。 |
+| OI-004 | M-LAG 的 GPU hostname 推测分组是否允许保留。 | 建议移除推测逻辑，改为只接受 Fabric 事实源。 |
+| OI-005 | 已引用 Profile 的锁定策略、Delete 规则与影响预览。 | 当前未引用 Profile 可编辑；需补充唯一名称、引用影响、权限、并发和服务端原子保存后再开放 Delete。 |
+| OI-006 | CloudVision Workspace/Build/Change Control 集成的目标版本与 API 契约。 | 在实现前定义对象 ownership、revision、RBAC、失败恢复和回采语义。 |
+
+> CloudVision 生命周期内容基于 Arista 官方 Workflow 与 Change Control 文档的语义转述；VLAN Profile、Network binding、Sequential Allocation、Direct Configuration 及当前页面交互均为 AmpCon 产品扩展。Content was rephrased for compliance with licensing restrictions.

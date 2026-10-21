@@ -1,0 +1,12 @@
+Core source:
+components/apps/RoceLosslessPolicyStudio.tsx
+components/apps/AIDCInventoryTopology.tsx
+components/apps/aidcFabricState.ts
+components/apps/aidcTopologyDomain.ts
+components/topology/TopologyCanvas.tsx
+components/apps/provisioning.css
+
+Documentation:
+README.md
+INTEGRATION.md
+MANIFEST.txt

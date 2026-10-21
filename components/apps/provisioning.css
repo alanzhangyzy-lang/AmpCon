@@ -340,3 +340,57 @@
 .provisioning-readable .vlan-allocation-selected > div:last-child::-webkit-scrollbar-thumb:hover {
   background: #64748b;
 }
+
+/* VLAN Services configuration uses two equal-height work panels. Each table owns
+ * its remaining panel space so a long data set does not change the split. */
+.provisioning-readable .vlan-services-configuration {
+  display: grid;
+  flex: 1 1 0%;
+  height: 100%;
+  grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 1rem;
+  min-height: 0;
+  overflow: hidden;
+  padding: 1.25rem;
+}
+
+.provisioning-readable .vlan-services-network-panel,
+.provisioning-readable .vlan-services-configuration > section {
+  min-width: 0;
+  min-height: 0;
+}
+
+.provisioning-readable .vlan-services-network-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.provisioning-readable .vlan-services-network-panel > section:first-child,
+.provisioning-readable .vlan-services-configuration > section {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+.provisioning-readable .vlan-services-network-panel > section:first-child {
+  flex: 1 1 auto;
+}
+
+.provisioning-readable .vlan-services-configuration > section {
+  height: 100%;
+}
+
+.provisioning-readable .vlan-services-network-panel > section:first-child > header,
+.provisioning-readable .vlan-services-configuration > section > header {
+  flex: 0 0 auto;
+}
+
+.provisioning-readable .vlan-services-network-panel > section:first-child > div:last-child,
+.provisioning-readable .vlan-services-configuration > section > div:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
